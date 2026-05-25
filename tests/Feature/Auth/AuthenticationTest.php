@@ -15,6 +15,15 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+        $response->assertSee('Correo electrónico');
+        $response->assertSee('Contraseña');
+    }
+
+    public function test_dashboard_requires_authentication(): void
+    {
+        $response = $this->get('/dashboard');
+
+        $response->assertRedirect(route('login'));
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -40,6 +49,16 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_logout_is_not_available_using_get(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/logout');
+
+        $response->assertMethodNotAllowed();
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_users_can_logout(): void
