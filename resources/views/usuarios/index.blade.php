@@ -31,6 +31,7 @@
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Telefono</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Cargo</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
@@ -59,10 +60,15 @@
                                             {{ ucfirst($usuario->estado) }}
                                         </span>
                                     </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                        <a href="{{ route('usuarios.edit', $usuario) }}" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
+                                            Editar
+                                        </a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                                    <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-500">
                                         No hay usuarios registrados.
                                     </td>
                                 </tr>

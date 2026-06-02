@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -33,6 +34,18 @@ class UserController extends Controller
     }
 
     /**
+     * Show the form for editing an internal user.
+     */
+    public function edit(User $user): View
+    {
+        $this->ensureInternalUser($user);
+
+        return view('usuarios.edit', [
+            'usuario' => $user,
+        ]);
+    }
+
+    /**
      * Store a newly created internal user.
      */
     public function store(StoreUserRequest $request): RedirectResponse
@@ -51,5 +64,33 @@ class UserController extends Controller
 
         return Redirect::route('usuarios.index')
             ->with('status', 'Usuario creado correctamente.');
+    }
+
+    /**
+     * Update an existing internal user.
+     */
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    {
+        $this->ensureInternalUser($user);
+
+        $validated = $request->validated();
+        $fullName = trim($validated['nombres'].' '.$validated['apellidos']);
+
+        $user->update([
+            ...$validated,
+            'name' => $fullName,
+            'email' => Str::lower($validated['email']),
+        ]);
+
+        return Redirect::route('usuarios.index')
+            ->with('status', 'Usuario actualizado correctamente.');
+    }
+
+    /**
+     * Ensure only internal users can be managed from this module.
+     */
+    private function ensureInternalUser(User $user): void
+    {
+        abort_if($user->tipo_usuario !== User::TIPO_USUARIO_INTERNO, 404);
     }
 }
