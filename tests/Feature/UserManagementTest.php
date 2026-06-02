@@ -24,6 +24,7 @@ class UserManagementTest extends TestCase
         $this->post('/usuarios', [])->assertRedirect('/login');
         $this->get('/usuarios/1/edit')->assertRedirect('/login');
         $this->put('/usuarios/1', [])->assertRedirect('/login');
+        $this->patch('/usuarios/1/inactivar')->assertRedirect('/login');
     }
 
     public function test_authenticated_user_can_view_create_form(): void
@@ -282,6 +283,100 @@ class UserManagementTest extends TestCase
             ->actingAs($user)
             ->put(route('usuarios.update', $publicUser), $this->validUserData())
             ->assertForbidden();
+    }
+
+    public function test_authenticated_user_can_inactivate_internal_user(): void
+    {
+        $user = User::factory()->create();
+        $internalUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Ana Maria Gomez Rios',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('usuarios.inactivate', $internalUser));
+
+        $response
+            ->assertRedirect(route('usuarios.index'))
+            ->assertSessionHas('status', 'Usuario inactivado correctamente.');
+
+        $internalUser->refresh();
+
+        $this->assertSame('inactivo', $internalUser->estado);
+        $this->assertSame(User::TIPO_USUARIO_INTERNO, $internalUser->tipo_usuario);
+        $this->assertDatabaseHas('users', [
+            'id' => $internalUser->id,
+            'estado' => 'inactivo',
+        ]);
+    }
+
+    public function test_users_list_shows_inactivate_button_only_for_active_internal_users(): void
+    {
+        $user = User::factory()->create();
+        $activeUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Usuario Activo',
+            'email' => 'activo@example.com',
+            'numero_documento' => '111222333',
+            'estado' => 'activo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+        $inactiveUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Usuario Inactivo',
+            'email' => 'inactivo@example.com',
+            'numero_documento' => '444555666',
+            'estado' => 'inactivo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index'));
+
+        $response
+            ->assertOk()
+            ->assertSee(route('usuarios.inactivate', $activeUser), false)
+            ->assertDontSee(route('usuarios.inactivate', $inactiveUser), false);
+    }
+
+    public function test_authenticated_user_cannot_inactivate_itself(): void
+    {
+        $user = User::factory()->create([
+            ...$this->validUserData(),
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('usuarios.inactivate', $user));
+
+        $response->assertForbidden();
+
+        $this->assertSame('activo', $user->refresh()->estado);
+    }
+
+    public function test_non_internal_users_cannot_be_inactivated_from_users_module(): void
+    {
+        $user = User::factory()->create();
+        $publicUser = User::factory()->create([
+            'tipo_usuario' => null,
+        ]);
+        $doctorUser = User::factory()->create([
+            'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+        ]);
+
+        $this
+            ->actingAs($user)
+            ->patch(route('usuarios.inactivate', $publicUser))
+            ->assertNotFound();
+
+        $this
+            ->actingAs($user)
+            ->patch(route('usuarios.inactivate', $doctorUser))
+            ->assertNotFound();
     }
 
     /**

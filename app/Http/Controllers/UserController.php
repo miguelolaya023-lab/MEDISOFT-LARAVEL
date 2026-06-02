@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -84,6 +85,23 @@ class UserController extends Controller
 
         return Redirect::route('usuarios.index')
             ->with('status', 'Usuario actualizado correctamente.');
+    }
+
+    /**
+     * Mark an internal user as inactive without deleting it.
+     */
+    public function inactivate(User $user): RedirectResponse
+    {
+        $this->ensureInternalUser($user);
+
+        abort_if($user->getKey() === Auth::id(), 403);
+
+        $user->update([
+            'estado' => 'inactivo',
+        ]);
+
+        return Redirect::route('usuarios.index')
+            ->with('status', 'Usuario inactivado correctamente.');
     }
 
     /**

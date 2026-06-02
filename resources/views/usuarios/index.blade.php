@@ -61,9 +61,22 @@
                                         </span>
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                        <a href="{{ route('usuarios.edit', $usuario) }}" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
-                                            Editar
-                                        </a>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a href="{{ route('usuarios.edit', $usuario) }}" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
+                                                Editar
+                                            </a>
+
+                                            @if ($usuario->estado === 'activo' && $usuario->id !== auth()->id())
+                                                <form method="POST" action="{{ route('usuarios.inactivate', $usuario) }}" onsubmit="return confirm('¿Está seguro de inactivar este usuario?')">
+                                                    @csrf
+                                                    @method('PATCH')
+
+                                                    <button type="submit" class="inline-flex items-center rounded-md border border-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition duration-150 ease-in-out hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">
+                                                        Inactivar
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
