@@ -80,7 +80,7 @@ class UserController extends Controller
     }
 
     /**
-     * Mark an internal user as inactive without deleting it.
+     * Inactiva un usuario interno sin eliminarlo del sistema.
      */
     public function inactivate(User $user): RedirectResponse
     {
@@ -88,16 +88,31 @@ class UserController extends Controller
 
         abort_if($user->getKey() === Auth::id(), 403);
 
-        $user->update([
-            'estado' => 'inactivo',
-        ]);
+        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
+        // al metodo inactivarUsuarioInterno() del diagrama y solo cambia el campo estado.
+        $user->inactivarUsuarioInterno();
 
         return Redirect::route('usuarios.index')
             ->with('status', 'Usuario inactivado correctamente.');
     }
 
     /**
-     * Ensure only internal users can be managed from this module.
+     * Activa un usuario interno previamente inactivo.
+     */
+    public function activate(User $user): RedirectResponse
+    {
+        $this->ensureInternalUser($user);
+
+        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
+        // al metodo activarUsuarioInterno() del diagrama y solo cambia el campo estado.
+        $user->activarUsuarioInterno();
+
+        return Redirect::route('usuarios.index')
+            ->with('status', 'Usuario activado correctamente.');
+    }
+
+    /**
+     * Garantiza que solo usuarios internos se gestionen desde este modulo.
      */
     private function ensureInternalUser(User $user): void
     {

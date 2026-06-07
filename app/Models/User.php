@@ -85,7 +85,35 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Inactiva un UsuarioInterno segun el metodo definido en el diagrama de clases.
+     *
+     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
+     * a UsuarioInterno en el UML. Este metodo no elimina el registro: solo cambia
+     * el campo estado a inactivo.
+     */
+    public function inactivarUsuarioInterno(): bool
+    {
+        return $this->update([
+            'estado' => 'inactivo',
+        ]);
+    }
+
+    /**
+     * Activa un UsuarioInterno segun el metodo definido en el diagrama de clases.
+     *
+     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
+     * a UsuarioInterno en el UML. Este metodo no elimina ni recrea el registro:
+     * solo cambia el campo estado a activo.
+     */
+    public function activarUsuarioInterno(): bool
+    {
+        return $this->update([
+            'estado' => 'activo',
+        ]);
+    }
+
+    /**
+     * Obtiene los atributos que deben convertirse automaticamente.
      *
      * @return array<string, string>
      */

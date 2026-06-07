@@ -25,6 +25,7 @@ class UserManagementTest extends TestCase
         $this->get('/usuarios/1/edit')->assertRedirect('/login');
         $this->put('/usuarios/1', [])->assertRedirect('/login');
         $this->patch('/usuarios/1/inactivar')->assertRedirect('/login');
+        $this->patch('/usuarios/1/activar')->assertRedirect('/login');
     }
 
     public function test_authenticated_user_can_view_create_form(): void
@@ -312,7 +313,7 @@ class UserManagementTest extends TestCase
         ]);
     }
 
-    public function test_users_list_shows_inactivate_button_only_for_active_internal_users(): void
+    public function test_users_list_shows_state_action_buttons_for_internal_users(): void
     {
         $user = User::factory()->create();
         $activeUser = User::factory()->create([
@@ -339,7 +340,9 @@ class UserManagementTest extends TestCase
         $response
             ->assertOk()
             ->assertSee(route('usuarios.inactivate', $activeUser), false)
-            ->assertDontSee(route('usuarios.inactivate', $inactiveUser), false);
+            ->assertDontSee(route('usuarios.activate', $activeUser), false)
+            ->assertDontSee(route('usuarios.inactivate', $inactiveUser), false)
+            ->assertSee(route('usuarios.activate', $inactiveUser), false);
     }
 
     public function test_authenticated_user_cannot_inactivate_itself(): void
@@ -376,6 +379,55 @@ class UserManagementTest extends TestCase
         $this
             ->actingAs($user)
             ->patch(route('usuarios.inactivate', $doctorUser))
+            ->assertNotFound();
+    }
+
+    public function test_authenticated_user_can_activate_internal_user(): void
+    {
+        $user = User::factory()->create();
+        $internalUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Ana Maria Gomez Rios',
+            'estado' => 'inactivo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('usuarios.activate', $internalUser));
+
+        $response
+            ->assertRedirect(route('usuarios.index'))
+            ->assertSessionHas('status', 'Usuario activado correctamente.');
+
+        $internalUser->refresh();
+
+        $this->assertSame('activo', $internalUser->estado);
+        $this->assertSame(User::TIPO_USUARIO_INTERNO, $internalUser->tipo_usuario);
+        $this->assertDatabaseHas('users', [
+            'id' => $internalUser->id,
+            'estado' => 'activo',
+        ]);
+    }
+
+    public function test_non_internal_users_cannot_be_activated_from_users_module(): void
+    {
+        $user = User::factory()->create();
+        $publicUser = User::factory()->create([
+            'tipo_usuario' => null,
+        ]);
+        $doctorUser = User::factory()->create([
+            'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+        ]);
+
+        $this
+            ->actingAs($user)
+            ->patch(route('usuarios.activate', $publicUser))
+            ->assertNotFound();
+
+        $this
+            ->actingAs($user)
+            ->patch(route('usuarios.activate', $doctorUser))
             ->assertNotFound();
     }
 
