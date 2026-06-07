@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -63,20 +62,18 @@ class UserController extends Controller
     }
 
     /**
-     * Update an existing internal user.
+     * Actualiza un usuario interno existente.
      */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $this->ensureInternalUser($user);
 
+        // UpdateUserRequest ejecuta la validacion antes de llegar aqui; el controlador coordina el flujo.
         $validated = $request->validated();
-        $fullName = trim($validated['nombres'].' '.$validated['apellidos']);
 
-        $user->update([
-            ...$validated,
-            'name' => $fullName,
-            'email' => Str::lower($validated['email']),
-        ]);
+        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
+        // al mensaje UsuarioInterno.actualizarUsuarioInterno(idUsuario, datos) del diagrama de secuencia.
+        $user->actualizarUsuarioInterno($validated);
 
         return Redirect::route('usuarios.index')
             ->with('status', 'Usuario actualizado correctamente.');

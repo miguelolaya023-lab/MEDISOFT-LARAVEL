@@ -61,6 +61,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Actualiza un UsuarioInterno segun el metodo definido en el diagrama de clases.
+     *
+     * Aunque Laravel conserva el nombre tecnico User por Breeze, en el UML este
+     * modelo representa conceptualmente a UsuarioInterno.
+     *
+     * @param  array{tipo_documento: string, numero_documento: string, nombres: string, apellidos: string, email: string, telefono: string, cargo: string}  $datos
+     */
+    public function actualizarUsuarioInterno(array $datos): bool
+    {
+        // UpdateUserRequest ya valido los datos antes de que el controlador llame al modelo.
+        $nombreCompleto = trim($datos['nombres'].' '.$datos['apellidos']);
+
+        return $this->update([
+            ...$datos,
+            // Breeze requiere name, por eso se regenera desde nombres y apellidos.
+            'name' => $nombreCompleto,
+            // El correo se normaliza a minusculas para mantener el comportamiento existente.
+            'email' => Str::lower($datos['email']),
+            // Este metodo solo actualiza datos propios del usuario interno.
+            // No cambia password ni tipo_usuario; esas responsabilidades pertenecen a otros flujos.
+        ]);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
