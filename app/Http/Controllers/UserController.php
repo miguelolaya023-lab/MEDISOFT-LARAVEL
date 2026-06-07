@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
@@ -13,15 +14,19 @@ use Illuminate\View\View;
 class UserController extends Controller
 {
     /**
-     * Display the internal users list.
+     * Muestra el listado de usuarios internos.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        // El controlador coordina la busqueda enviada por la vista mediante el parametro GET "buscar".
+        $criterio = trim((string) $request->query('buscar', ''));
+
         return view('usuarios.index', [
-            'usuarios' => User::query()
-                ->where('tipo_usuario', User::TIPO_USUARIO_INTERNO)
+            'usuarios' => User::consultarUsuarioInterno($criterio)
                 ->latest()
-                ->paginate(10),
+                ->paginate(10)
+                ->withQueryString(),
+            'buscar' => $criterio,
         ]);
     }
 

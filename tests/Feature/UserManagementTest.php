@@ -161,6 +161,107 @@ class UserManagementTest extends TestCase
             ->assertDontSee($doctorUser->name);
     }
 
+    public function test_users_list_can_search_internal_users_by_partial_criteria(): void
+    {
+        $user = User::factory()->create();
+
+        User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Miguel Olaya',
+            'email' => 'miguel.olaya@example.com',
+            'numero_documento' => '1118123456',
+            'nombres' => 'Miguel',
+            'apellidos' => 'Olaya',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+        User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Carlos Perez',
+            'email' => 'carlos.perez@example.com',
+            'numero_documento' => '99990000',
+            'nombres' => 'Carlos',
+            'apellidos' => 'Perez',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+        User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Miguel Olaya Externo',
+            'email' => 'miguel.externo@example.com',
+            'numero_documento' => '11189999',
+            'nombres' => 'Miguel',
+            'apellidos' => 'Olaya Externo',
+            'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+        ]);
+
+        $fullNameResponse = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index', ['buscar' => 'Miguel Olaya']));
+
+        $fullNameResponse
+            ->assertOk()
+            ->assertSee('Miguel Olaya')
+            ->assertDontSee('Carlos Perez')
+            ->assertDontSee('Miguel Olaya Externo');
+
+        $documentResponse = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index', ['buscar' => '1118']));
+
+        $documentResponse
+            ->assertOk()
+            ->assertSee('Miguel Olaya')
+            ->assertDontSee('Carlos Perez')
+            ->assertDontSee('Miguel Olaya Externo');
+
+        $lastNameResponse = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index', ['buscar' => 'Ola']));
+
+        $lastNameResponse
+            ->assertOk()
+            ->assertSee('Miguel Olaya')
+            ->assertDontSee('Carlos Perez')
+            ->assertDontSee('Miguel Olaya Externo');
+    }
+
+    public function test_users_list_search_keeps_filter_on_pagination_links(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 1; $i <= 11; $i++) {
+            User::factory()->create([
+                ...$this->validUserData(),
+                'name' => "Busqueda Interno {$i}",
+                'email' => "busqueda.interno{$i}@example.com",
+                'numero_documento' => "12345{$i}",
+                'nombres' => 'Busqueda',
+                'apellidos' => "Interno {$i}",
+                'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+            ]);
+        }
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index', ['buscar' => 'Busqueda']));
+
+        $response
+            ->assertOk()
+            ->assertSee('buscar=Busqueda', false);
+    }
+
+    public function test_users_list_shows_search_empty_state_message(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('usuarios.index', ['buscar' => 'sin coincidencias']));
+
+        $response
+            ->assertOk()
+            ->assertSee('No se encontraron usuarios internos con el criterio de búsqueda ingresado.');
+    }
+
     public function test_authenticated_user_can_view_internal_user_edit_form(): void
     {
         $user = User::factory()->create();

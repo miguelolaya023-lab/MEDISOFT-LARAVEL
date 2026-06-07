@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -33,6 +34,37 @@ class User extends Authenticatable
     public const TIPO_USUARIO_MEDICO = 'medico';
 
     public const TIPO_USUARIO_INTERNO = 'interno';
+
+    /**
+     * Consulta usuarios internos segun el metodo definido en el diagrama de clases.
+     *
+     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
+     * a UsuarioInterno en el UML. La consulta solo incluye usuarios internos y,
+     * cuando recibe un criterio, usa coincidencias parciales para documento y nombres.
+     *
+     * @return Builder<self>
+     */
+    public static function consultarUsuarioInterno(?string $criterio): Builder
+    {
+        $consulta = self::query()
+            ->where('tipo_usuario', self::TIPO_USUARIO_INTERNO);
+
+        $criterio = trim((string) $criterio);
+
+        if ($criterio === '') {
+            return $consulta;
+        }
+
+        $busquedaParcial = '%'.$criterio.'%';
+
+        return $consulta->where(function (Builder $query) use ($busquedaParcial): void {
+            // La busqueda usa LIKE para permitir coincidencias parciales como "1118", "Mig" u "Olaya".
+            $query->where('numero_documento', 'like', $busquedaParcial)
+                ->orWhere('nombres', 'like', $busquedaParcial)
+                ->orWhere('apellidos', 'like', $busquedaParcial)
+                ->orWhere('name', 'like', $busquedaParcial);
+        });
+    }
 
     /**
      * Crea un UsuarioInterno segun el metodo definido en el diagrama de clases.

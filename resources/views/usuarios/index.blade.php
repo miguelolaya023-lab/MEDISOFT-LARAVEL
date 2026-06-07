@@ -20,6 +20,26 @@
             @endif
 
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                {{-- La vista envia el criterio de busqueda por GET para consultar UsuarioInterno sin cambiar de ruta. --}}
+                <div class="border-b border-gray-200 p-6">
+                    <form method="GET" action="{{ route('usuarios.index') }}" class="flex flex-col gap-4 sm:flex-row sm:items-end">
+                        <div class="grow">
+                            <x-input-label for="buscar" value="Buscar usuario interno" />
+                            <x-text-input id="buscar" name="buscar" type="search" class="mt-1 block w-full focus:border-teal-600 focus:ring-teal-600" :value="$buscar" placeholder="Buscar por documento o nombre" />
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-teal-700 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-teal-800 focus:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
+                                Buscar
+                            </button>
+
+                            <a href="{{ route('usuarios.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
+                                Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -92,7 +112,7 @@
                             @empty
                                 <tr>
                                     <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-500">
-                                        No hay usuarios registrados.
+                                        {{ $buscar !== '' ? 'No se encontraron usuarios internos con el criterio de búsqueda ingresado.' : 'No hay usuarios registrados.' }}
                                     </td>
                                 </tr>
                             @endforelse
