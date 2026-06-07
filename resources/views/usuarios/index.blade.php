@@ -6,7 +6,7 @@
             </h2>
 
             <a href="{{ route('usuarios.create') }}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-teal-700 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-teal-800 focus:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
-                Crear usuario
+                Crear usuario interno
             </a>
         </div>
     </x-slot>

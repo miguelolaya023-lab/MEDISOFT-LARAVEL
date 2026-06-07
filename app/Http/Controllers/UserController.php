@@ -51,17 +51,12 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        // StoreUserRequest ejecuta la validacion antes de llegar aqui; el controlador solo coordina el flujo.
         $validated = $request->validated();
-        $fullName = trim($validated['nombres'].' '.$validated['apellidos']);
 
-        User::query()->create([
-            ...$validated,
-            'name' => $fullName,
-            'email' => Str::lower($validated['email']),
-            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
-            // Contrasena temporal generada en servidor; en una fase futura se podra enviar o restablecer por correo.
-            'password' => Str::password(16),
-        ]);
+        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
+        // al mensaje UsuarioInterno.crearUsuarioInterno(datos) del diagrama de secuencia.
+        User::crearUsuarioInterno($validated);
 
         return Redirect::route('usuarios.index')
             ->with('status', 'Usuario creado correctamente.');
