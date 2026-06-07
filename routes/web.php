@@ -19,6 +19,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/usuarios/{user}/edit', [UserController::class, 'edit'])->name('usuarios.edit');
     Route::patch('/usuarios/{user}/inactivar', [UserController::class, 'inactivate'])->name('usuarios.inactivate');
     Route::patch('/usuarios/{user}/activar', [UserController::class, 'activate'])->name('usuarios.activate');
+    Route::delete('/usuarios/{user}', [UserController::class, 'destroy'])->name('usuarios.destroy');
     Route::match(['put', 'patch'], '/usuarios/{user}', [UserController::class, 'update'])->name('usuarios.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

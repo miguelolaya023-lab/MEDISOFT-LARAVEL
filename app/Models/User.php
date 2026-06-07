@@ -145,6 +145,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Elimina fisicamente un UsuarioInterno segun el metodo definido en el diagrama de clases.
+     *
+     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
+     * a UsuarioInterno en el UML. Este metodo ejecuta delete(), por lo que el
+     * registro se borra de la tabla users y no queda como usuario inactivo.
+     */
+    public function eliminarUsuarioInterno(): bool
+    {
+        return $this->delete();
+    }
+
+    /**
      * Obtiene los atributos que deben convertirse automaticamente.
      *
      * @return array<string, string>

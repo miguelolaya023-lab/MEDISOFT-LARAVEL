@@ -26,6 +26,7 @@ class UserManagementTest extends TestCase
         $this->put('/usuarios/1', [])->assertRedirect('/login');
         $this->patch('/usuarios/1/inactivar')->assertRedirect('/login');
         $this->patch('/usuarios/1/activar')->assertRedirect('/login');
+        $this->delete('/usuarios/1')->assertRedirect('/login');
     }
 
     public function test_authenticated_user_can_view_create_form(): void
@@ -442,8 +443,10 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertSee(route('usuarios.inactivate', $activeUser), false)
             ->assertDontSee(route('usuarios.activate', $activeUser), false)
+            ->assertDontSee('action="'.route('usuarios.destroy', $activeUser).'"', false)
             ->assertDontSee(route('usuarios.inactivate', $inactiveUser), false)
-            ->assertSee(route('usuarios.activate', $inactiveUser), false);
+            ->assertSee(route('usuarios.activate', $inactiveUser), false)
+            ->assertSee('action="'.route('usuarios.destroy', $inactiveUser).'"', false);
     }
 
     public function test_authenticated_user_cannot_inactivate_itself(): void
@@ -529,6 +532,93 @@ class UserManagementTest extends TestCase
         $this
             ->actingAs($user)
             ->patch(route('usuarios.activate', $doctorUser))
+            ->assertNotFound();
+    }
+
+    public function test_authenticated_user_can_delete_inactive_internal_user(): void
+    {
+        $user = User::factory()->create();
+        $internalUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Ana Maria Gomez Rios',
+            'estado' => 'inactivo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('usuarios.destroy', $internalUser));
+
+        $response
+            ->assertRedirect(route('usuarios.index'))
+            ->assertSessionHas('status', 'Usuario eliminado correctamente.');
+
+        $this->assertDatabaseMissing('users', [
+            'id' => $internalUser->id,
+        ]);
+    }
+
+    public function test_authenticated_user_cannot_delete_active_internal_user(): void
+    {
+        $user = User::factory()->create();
+        $internalUser = User::factory()->create([
+            ...$this->validUserData(),
+            'name' => 'Ana Maria Gomez Rios',
+            'estado' => 'activo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('usuarios.destroy', $internalUser));
+
+        $response
+            ->assertRedirect(route('usuarios.index'))
+            ->assertSessionHas('status', 'No es posible eliminar un usuario activo. Primero debe ser inactivado.');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $internalUser->id,
+            'estado' => 'activo',
+        ]);
+    }
+
+    public function test_authenticated_user_cannot_delete_itself(): void
+    {
+        $user = User::factory()->create([
+            ...$this->validUserData(),
+            'estado' => 'inactivo',
+            'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('usuarios.destroy', $user));
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+        ]);
+    }
+
+    public function test_non_internal_users_cannot_be_deleted_from_users_module(): void
+    {
+        $user = User::factory()->create();
+        $publicUser = User::factory()->create([
+            'tipo_usuario' => null,
+        ]);
+        $doctorUser = User::factory()->create([
+            'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+        ]);
+
+        $this
+            ->actingAs($user)
+            ->delete(route('usuarios.destroy', $publicUser))
+            ->assertNotFound();
+
+        $this
+            ->actingAs($user)
+            ->delete(route('usuarios.destroy', $doctorUser))
             ->assertNotFound();
     }
 

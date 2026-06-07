@@ -117,6 +117,28 @@ class UserController extends Controller
     }
 
     /**
+     * Elimina fisicamente un usuario interno inactivo.
+     */
+    public function destroy(User $user): RedirectResponse
+    {
+        $this->ensureInternalUser($user);
+
+        abort_if($user->getKey() === Auth::id(), 403);
+
+        if ($user->estado !== 'inactivo') {
+            return Redirect::route('usuarios.index')
+                ->with('status', 'No es posible eliminar un usuario activo. Primero debe ser inactivado.');
+        }
+
+        // El controlador verifica las reglas del flujo y delega en el modelo el metodo UML.
+        // Solo se eliminan usuarios inactivos para evitar borrar usuarios que aun estan en uso.
+        $user->eliminarUsuarioInterno();
+
+        return Redirect::route('usuarios.index')
+            ->with('status', 'Usuario eliminado correctamente.');
+    }
+
+    /**
      * Garantiza que solo usuarios internos se gestionen desde este modulo.
      */
     private function ensureInternalUser(User $user): void

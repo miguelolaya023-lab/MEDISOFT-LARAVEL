@@ -105,6 +105,18 @@
                                                         Activar
                                                     </button>
                                                 </form>
+
+                                                {{-- Eliminar solo se ofrece para UsuarioInterno inactivo y distinto del usuario autenticado. --}}
+                                                @if ($usuario->id !== auth()->id())
+                                                    <form method="POST" action="{{ route('usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Está seguro de eliminar definitivamente este usuario?')">
+                                                        @csrf
+                                                        @method('DELETE')
+
+                                                        <button type="submit" class="inline-flex items-center rounded-md border border-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition duration-150 ease-in-out hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">
+                                                            Eliminar
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             @endif
                                         </div>
                                     </td>
