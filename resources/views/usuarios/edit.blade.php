@@ -67,6 +67,11 @@
                                 {{ ucfirst($usuario->estado) }}
                             </div>
                         </div>
+                        @if ($usuario->medico)
+                            @foreach (['registro_profesional' => 'Registro profesional', 'especialidad' => 'Especialidad'] as $campo => $label)
+                                <div><x-input-label :for="$campo" :value="$label" /><x-text-input :id="$campo" :name="$campo" :value="old($campo, $usuario->medico->$campo)" required class="mt-1 block w-full" /><x-input-error :messages="$errors->get($campo)" /></div>
+                            @endforeach
+                        @endif
                     </div>
 
                     <div class="flex items-center justify-end gap-3">

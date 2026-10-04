@@ -68,6 +68,33 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
+        $response->assertRedirect('/login');
+    }
+
+    public function test_user_can_login_using_document_with_leading_zeroes(): void
+    {
+        $user = User::factory()->create(['numero_documento' => '001234']);
+        $this->post('/login', ['identificador' => '001234', 'password' => 'password'])->assertRedirect('/dashboard');
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->refresh()->ultimo_acceso);
+    }
+
+    public function test_inactive_and_invalid_credentials_share_generic_rejection(): void
+    {
+        $user = User::factory()->create(['estado' => 'inactivo']);
+        $this->post('/login', ['identificador' => $user->email, 'password' => 'password'])->assertInvalid(['identificador' => trans('auth.failed')]);
+        $this->assertGuest();
+        $this->post('/login', ['identificador' => 'desconocido', 'password' => 'password'])->assertInvalid(['identificador' => trans('auth.failed')]);
+        $this->assertGuest();
+    }
+
+    public function test_login_preserves_five_attempt_rate_limit(): void
+    {
+        $user = User::factory()->create();
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', ['identificador' => $user->email, 'password' => 'incorrecta'])->assertInvalid('identificador');
+        }
+        $this->post('/login', ['identificador' => $user->email, 'password' => 'password'])->assertInvalid('identificador');
+        $this->assertGuest();
     }
 }

@@ -13,14 +13,16 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         Panel
                     </x-nav-link>
+                    @can('viewAny', \App\Models\User::class)
                     <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                         Usuarios
                     </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-4">
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
                     @csrf
 
                     <button type="submit" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-sm font-medium text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
@@ -46,12 +48,12 @@
                             Perfil
                         </x-dropdown-link>
 
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                                                this.closest('form').requestSubmit();">
                                 Cerrar sesión
                             </x-dropdown-link>
                         </form>
@@ -75,9 +77,11 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 Panel
             </x-responsive-nav-link>
+            @can('viewAny', \App\Models\User::class)
             <x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                 Usuarios
             </x-responsive-nav-link>
+            @endcan
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
@@ -91,12 +95,12 @@
                     Perfil
                 </x-responsive-nav-link>
 
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                                        this.closest('form').requestSubmit();">
                         Cerrar sesión
                     </x-responsive-nav-link>
                 </form>

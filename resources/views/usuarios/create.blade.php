@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('usuarios.store') }}" class="space-y-6">
+                <form method="POST" action="{{ route('usuarios.store') }}" class="space-y-6" x-data="{ medico: @js((bool) old('es_medico', false)) }">
                     @csrf
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -67,6 +67,31 @@
                                 <option value="inactivo" @selected(old('estado') === 'inactivo')>Inactivo</option>
                             </select>
                             <x-input-error :messages="$errors->get('estado')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="rol_id" value="Rol" />
+                            <select id="rol_id" name="rol_id" required class="mt-1 block w-full rounded-md border-gray-300">
+                                <option value="">Seleccione</option>
+                                @foreach ($roles as $rol)
+                                    <option value="{{ $rol->id }}" @selected(old('rol_id') == $rol->id)>{{ $rol->nombre }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('rol_id')" />
+                        </div>
+                        <div>
+                            <input type="hidden" name="es_medico" value="0">
+                            <label><input type="checkbox" name="es_medico" value="1" x-model="medico"> Registrar perfil profesional Médico</label>
+                            <p class="text-sm text-gray-600">El perfil profesional es independiente del rol.</p>
+                        </div>
+                        <div x-show="medico">
+                            <x-input-label for="registro_profesional" value="Registro profesional" />
+                            <x-text-input id="registro_profesional" name="registro_profesional" :value="old('registro_profesional')" x-bind:disabled="!medico" class="mt-1 block w-full" />
+                            <x-input-error :messages="$errors->get('registro_profesional')" />
+                        </div>
+                        <div x-show="medico">
+                            <x-input-label for="especialidad" value="Especialidad" />
+                            <x-text-input id="especialidad" name="especialidad" :value="old('especialidad')" x-bind:disabled="!medico" class="mt-1 block w-full" />
+                            <x-input-error :messages="$errors->get('especialidad')" />
                         </div>
                     </div>
 

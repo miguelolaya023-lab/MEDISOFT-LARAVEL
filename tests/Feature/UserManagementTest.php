@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Rol;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -26,12 +28,12 @@ class UserManagementTest extends TestCase
         $this->put('/usuarios/1', [])->assertRedirect('/login');
         $this->patch('/usuarios/1/inactivar')->assertRedirect('/login');
         $this->patch('/usuarios/1/activar')->assertRedirect('/login');
-        $this->delete('/usuarios/1')->assertRedirect('/login');
+        $this->delete('/usuarios/1')->assertMethodNotAllowed();
     }
 
     public function test_authenticated_user_can_view_create_form(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         $response = $this
             ->actingAs($user)
@@ -45,7 +47,7 @@ class UserManagementTest extends TestCase
 
     public function test_internal_user_creation_requires_required_fields(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         $response = $this
             ->actingAs($user)
@@ -68,7 +70,7 @@ class UserManagementTest extends TestCase
 
     public function test_internal_user_creation_requires_unique_document_and_email(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         User::factory()->create([
             'email' => 'existente@example.com',
@@ -91,16 +93,17 @@ class UserManagementTest extends TestCase
 
     public function test_authenticated_user_can_store_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         $response = $this
             ->actingAs($user)
             ->post('/usuarios', $this->validUserData());
 
+        $createdUser = User::query()->where('email', 'ana.gomez@example.com')->firstOrFail();
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('usuarios.index'))
-            ->assertSessionHas('status', 'Usuario creado correctamente.');
+            ->assertRedirect(route('usuarios.show', $createdUser))
+            ->assertSessionHas('status', 'Usuario creado correctamente. La contraseña puede establecerse mediante recuperación.');
 
         $this->assertDatabaseHas('users', [
             'name' => 'Ana Maria Gomez Rios',
@@ -123,7 +126,7 @@ class UserManagementTest extends TestCase
 
         $this
             ->actingAs($user)
-            ->get('/usuarios')
+            ->get(route('usuarios.show', $createdUser))
             ->assertOk()
             ->assertSee('Ana Maria Gomez Rios')
             ->assertSee('Usuario creado correctamente.', false);
@@ -131,7 +134,7 @@ class UserManagementTest extends TestCase
 
     public function test_users_list_only_displays_internal_users(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         $publicUser = User::factory()->create([
             'name' => 'Usuario Registro Publico',
@@ -159,12 +162,12 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertSee($internalUser->name)
             ->assertDontSee($publicUser->name)
-            ->assertDontSee($doctorUser->name);
+            ->assertSee($doctorUser->name);
     }
 
     public function test_users_list_can_search_internal_users_by_partial_criteria(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         User::factory()->create([
             ...$this->validUserData(),
@@ -191,7 +194,7 @@ class UserManagementTest extends TestCase
             'numero_documento' => '11189999',
             'nombres' => 'Miguel',
             'apellidos' => 'Olaya Externo',
-            'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+            'tipo_usuario' => null,
         ]);
 
         $fullNameResponse = $this
@@ -227,7 +230,7 @@ class UserManagementTest extends TestCase
 
     public function test_users_list_search_keeps_filter_on_pagination_links(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         for ($i = 1; $i <= 11; $i++) {
             User::factory()->create([
@@ -252,7 +255,7 @@ class UserManagementTest extends TestCase
 
     public function test_users_list_shows_search_empty_state_message(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
 
         $response = $this
             ->actingAs($user)
@@ -265,7 +268,7 @@ class UserManagementTest extends TestCase
 
     public function test_authenticated_user_can_view_internal_user_edit_form(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -285,7 +288,7 @@ class UserManagementTest extends TestCase
 
     public function test_authenticated_user_can_update_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -296,19 +299,18 @@ class UserManagementTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->put(route('usuarios.update', $internalUser), [
-                ...$this->validUserData(),
+                ...Arr::except($this->validUserData(), ['estado', 'rol_id']),
                 'numero_documento' => '1122334455',
                 'nombres' => 'Laura',
                 'apellidos' => 'Martinez Silva',
                 'email' => 'LAURA.MARTINEZ@example.com',
                 'telefono' => '3112223344',
                 'cargo' => 'Recepcionista',
-                'estado' => 'inactivo',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('usuarios.index'))
+            ->assertRedirect(route('usuarios.show', $internalUser))
             ->assertSessionHas('status', 'Usuario actualizado correctamente.');
 
         $internalUser->refresh();
@@ -324,7 +326,7 @@ class UserManagementTest extends TestCase
 
     public function test_internal_user_update_requires_unique_document_and_email_except_current_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -342,17 +344,17 @@ class UserManagementTest extends TestCase
         $sameDataResponse = $this
             ->actingAs($user)
             ->from(route('usuarios.edit', $internalUser))
-            ->put(route('usuarios.update', $internalUser), $this->validUserData());
+            ->put(route('usuarios.update', $internalUser), Arr::except($this->validUserData(), ['estado', 'rol_id']));
 
         $sameDataResponse
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('usuarios.index'));
+            ->assertRedirect(route('usuarios.show', $internalUser));
 
         $duplicateResponse = $this
             ->actingAs($user)
             ->from(route('usuarios.edit', $internalUser))
             ->put(route('usuarios.update', $internalUser), [
-                ...$this->validUserData(),
+                ...Arr::except($this->validUserData(), ['estado', 'rol_id']),
                 'email' => $otherUser->email,
                 'numero_documento' => $otherUser->numero_documento,
             ]);
@@ -364,7 +366,7 @@ class UserManagementTest extends TestCase
 
     public function test_non_internal_users_cannot_be_edited_from_users_module(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $publicUser = User::factory()->create([
             'tipo_usuario' => null,
         ]);
@@ -375,12 +377,12 @@ class UserManagementTest extends TestCase
         $this
             ->actingAs($user)
             ->get(route('usuarios.edit', $publicUser))
-            ->assertNotFound();
+            ->assertForbidden();
 
         $this
             ->actingAs($user)
             ->get(route('usuarios.edit', $doctorUser))
-            ->assertNotFound();
+            ->assertOk();
 
         $this
             ->actingAs($user)
@@ -390,7 +392,7 @@ class UserManagementTest extends TestCase
 
     public function test_authenticated_user_can_inactivate_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -399,10 +401,10 @@ class UserManagementTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch(route('usuarios.inactivate', $internalUser));
+            ->patch(route('usuarios.inactivate', $internalUser), ['motivo' => 'Cambio autorizado de prueba']);
 
         $response
-            ->assertRedirect(route('usuarios.index'))
+            ->assertRedirect(route('usuarios.show', $internalUser))
             ->assertSessionHas('status', 'Usuario inactivado correctamente.');
 
         $internalUser->refresh();
@@ -417,7 +419,7 @@ class UserManagementTest extends TestCase
 
     public function test_users_list_shows_state_action_buttons_for_internal_users(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $activeUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Usuario Activo',
@@ -439,26 +441,23 @@ class UserManagementTest extends TestCase
             ->actingAs($user)
             ->get(route('usuarios.index'));
 
-        $response
-            ->assertOk()
-            ->assertSee(route('usuarios.inactivate', $activeUser), false)
-            ->assertDontSee(route('usuarios.activate', $activeUser), false)
-            ->assertDontSee('action="'.route('usuarios.destroy', $activeUser).'"', false)
-            ->assertDontSee(route('usuarios.inactivate', $inactiveUser), false)
-            ->assertSee(route('usuarios.activate', $inactiveUser), false)
-            ->assertSee('action="'.route('usuarios.destroy', $inactiveUser).'"', false);
+        $response->assertOk()->assertSee(route('usuarios.show', $activeUser), false)->assertSee(route('usuarios.show', $inactiveUser), false);
+        $this->get(route('usuarios.show', $activeUser))->assertSee(route('usuarios.inactivate', $activeUser), false)->assertDontSee('Eliminar');
+        $this->get(route('usuarios.show', $inactiveUser))->assertSee(route('usuarios.activate', $inactiveUser), false)->assertDontSee('Eliminar');
     }
 
     public function test_authenticated_user_cannot_inactivate_itself(): void
     {
-        $user = User::factory()->create([
-            ...$this->validUserData(),
+        $user = User::factory()->administrator()->create([
+            ...Arr::except($this->validUserData(), ['rol_id']),
             'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
         ]);
 
+        User::factory()->administrator()->create();
+
         $response = $this
             ->actingAs($user)
-            ->patch(route('usuarios.inactivate', $user));
+            ->patch(route('usuarios.inactivate', $user), ['motivo' => 'Cambio autorizado de prueba']);
 
         $response->assertForbidden();
 
@@ -467,7 +466,7 @@ class UserManagementTest extends TestCase
 
     public function test_non_internal_users_cannot_be_inactivated_from_users_module(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $publicUser = User::factory()->create([
             'tipo_usuario' => null,
         ]);
@@ -477,18 +476,18 @@ class UserManagementTest extends TestCase
 
         $this
             ->actingAs($user)
-            ->patch(route('usuarios.inactivate', $publicUser))
-            ->assertNotFound();
+            ->patch(route('usuarios.inactivate', $publicUser), ['motivo' => 'Cambio autorizado de prueba'])
+            ->assertForbidden();
 
         $this
             ->actingAs($user)
-            ->patch(route('usuarios.inactivate', $doctorUser))
-            ->assertNotFound();
+            ->patch(route('usuarios.inactivate', $doctorUser), ['motivo' => 'Cambio autorizado de prueba'])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_authenticated_user_can_activate_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -498,10 +497,10 @@ class UserManagementTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch(route('usuarios.activate', $internalUser));
+            ->patch(route('usuarios.activate', $internalUser), ['motivo' => 'Cambio autorizado de prueba']);
 
         $response
-            ->assertRedirect(route('usuarios.index'))
+            ->assertRedirect(route('usuarios.show', $internalUser))
             ->assertSessionHas('status', 'Usuario activado correctamente.');
 
         $internalUser->refresh();
@@ -516,28 +515,29 @@ class UserManagementTest extends TestCase
 
     public function test_non_internal_users_cannot_be_activated_from_users_module(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $publicUser = User::factory()->create([
             'tipo_usuario' => null,
         ]);
         $doctorUser = User::factory()->create([
             'tipo_usuario' => User::TIPO_USUARIO_MEDICO,
+            'estado' => 'inactivo',
         ]);
 
         $this
             ->actingAs($user)
-            ->patch(route('usuarios.activate', $publicUser))
-            ->assertNotFound();
+            ->patch(route('usuarios.activate', $publicUser), ['motivo' => 'Cambio autorizado de prueba'])
+            ->assertForbidden();
 
         $this
             ->actingAs($user)
-            ->patch(route('usuarios.activate', $doctorUser))
-            ->assertNotFound();
+            ->patch(route('usuarios.activate', $doctorUser), ['motivo' => 'Cambio autorizado de prueba'])
+            ->assertSessionHasNoErrors();
     }
 
-    public function test_authenticated_user_can_delete_inactive_internal_user(): void
+    public function test_authenticated_user_cannot_delete_inactive_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -547,20 +547,19 @@ class UserManagementTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->delete(route('usuarios.destroy', $internalUser));
+            ->delete('/usuarios/'.$internalUser->id);
 
         $response
-            ->assertRedirect(route('usuarios.index'))
-            ->assertSessionHas('status', 'Usuario eliminado correctamente.');
+            ->assertMethodNotAllowed();
 
-        $this->assertDatabaseMissing('users', [
+        $this->assertDatabaseHas('users', [
             'id' => $internalUser->id,
         ]);
     }
 
     public function test_authenticated_user_cannot_delete_active_internal_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $internalUser = User::factory()->create([
             ...$this->validUserData(),
             'name' => 'Ana Maria Gomez Rios',
@@ -570,11 +569,10 @@ class UserManagementTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->delete(route('usuarios.destroy', $internalUser));
+            ->delete('/usuarios/'.$internalUser->id);
 
         $response
-            ->assertRedirect(route('usuarios.index'))
-            ->assertSessionHas('status', 'No es posible eliminar un usuario activo. Primero debe ser inactivado.');
+            ->assertMethodNotAllowed();
 
         $this->assertDatabaseHas('users', [
             'id' => $internalUser->id,
@@ -584,7 +582,7 @@ class UserManagementTest extends TestCase
 
     public function test_authenticated_user_cannot_delete_itself(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->administrator()->create([
             ...$this->validUserData(),
             'estado' => 'inactivo',
             'tipo_usuario' => User::TIPO_USUARIO_INTERNO,
@@ -592,9 +590,9 @@ class UserManagementTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->delete(route('usuarios.destroy', $user));
+            ->delete('/usuarios/'.$user->id);
 
-        $response->assertForbidden();
+        $response->assertMethodNotAllowed();
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -603,7 +601,7 @@ class UserManagementTest extends TestCase
 
     public function test_non_internal_users_cannot_be_deleted_from_users_module(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->administrator()->create();
         $publicUser = User::factory()->create([
             'tipo_usuario' => null,
         ]);
@@ -613,17 +611,17 @@ class UserManagementTest extends TestCase
 
         $this
             ->actingAs($user)
-            ->delete(route('usuarios.destroy', $publicUser))
-            ->assertNotFound();
+            ->delete('/usuarios/'.$publicUser->id)
+            ->assertMethodNotAllowed();
 
         $this
             ->actingAs($user)
-            ->delete(route('usuarios.destroy', $doctorUser))
-            ->assertNotFound();
+            ->delete('/usuarios/'.$doctorUser->id)
+            ->assertMethodNotAllowed();
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private function validUserData(): array
     {
@@ -636,6 +634,7 @@ class UserManagementTest extends TestCase
             'telefono' => '3001234567',
             'cargo' => 'Auxiliar administrativo',
             'estado' => 'activo',
+            'rol_id' => Rol::query()->where('nombre', 'Administrativo')->value('id'),
         ];
     }
 }

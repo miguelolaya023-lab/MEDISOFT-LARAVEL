@@ -5,9 +5,11 @@
                 Usuarios
             </h2>
 
+            @can('create', \App\Models\User::class)
             <a href="{{ route('usuarios.create') }}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-teal-700 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-teal-800 focus:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
                 Crear usuario interno
             </a>
+            @endcan
         </div>
     </x-slot>
 
@@ -82,42 +84,12 @@
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                                         <div class="flex items-center justify-end gap-2">
-                                            <a href="{{ route('usuarios.edit', $usuario) }}" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
-                                                Editar
-                                            </a>
-
-                                            {{-- La vista muestra Activar o Inactivar segun el estado actual del UsuarioInterno. --}}
-                                            @if ($usuario->estado === 'activo' && $usuario->id !== auth()->id())
-                                                <form method="POST" action="{{ route('usuarios.inactivate', $usuario) }}" onsubmit="return confirm('¿Está seguro de inactivar este usuario?')">
-                                                    @csrf
-                                                    @method('PATCH')
-
-                                                    <button type="submit" class="inline-flex items-center rounded-md border border-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition duration-150 ease-in-out hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">
-                                                        Inactivar
-                                                    </button>
-                                                </form>
-                                            @elseif ($usuario->estado === 'inactivo')
-                                                <form method="POST" action="{{ route('usuarios.activate', $usuario) }}" onsubmit="return confirm('¿Está seguro de activar este usuario?')">
-                                                    @csrf
-                                                    @method('PATCH')
-
-                                                    <button type="submit" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
-                                                        Activar
-                                                    </button>
-                                                </form>
-
-                                                {{-- Eliminar solo se ofrece para UsuarioInterno inactivo y distinto del usuario autenticado. --}}
-                                                @if ($usuario->id !== auth()->id())
-                                                    <form method="POST" action="{{ route('usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Está seguro de eliminar definitivamente este usuario?')">
-                                                        @csrf
-                                                        @method('DELETE')
-
-                                                        <button type="submit" class="inline-flex items-center rounded-md border border-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition duration-150 ease-in-out hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">
-                                                            Eliminar
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            @endif
+                                            @can('view', $usuario)
+                                                <a href="{{ route('usuarios.show', $usuario) }}" class="text-teal-700 underline">Ver detalle</a>
+                                            @endcan
+                                            @can('update', $usuario)
+                                                <a href="{{ route('usuarios.edit', $usuario) }}" class="text-teal-700 underline">Editar</a>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>

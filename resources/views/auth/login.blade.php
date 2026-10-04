@@ -5,7 +5,7 @@
         <p class="text-sm font-semibold uppercase tracking-wide text-teal-700">MEDISOFT</p>
         <h1 class="mt-2 text-2xl font-semibold text-gray-900">Iniciar sesión</h1>
         <p class="mt-2 text-sm text-gray-600">
-            Accede con tu correo electrónico y contraseña para continuar al panel administrativo.
+            Accede con tu correo electrónico o documento y contraseña para continuar al panel administrativo.
         </p>
     </div>
 
@@ -13,9 +13,9 @@
         @csrf
 
         <div>
-            <x-input-label for="email" value="Correo electrónico" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-label for="identificador" value="Correo electrónico o documento" />
+            <x-text-input id="identificador" class="block mt-1 w-full" type="text" name="identificador" :value="old('identificador')" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('identificador')" class="mt-2" />
         </div>
 
         <div class="mt-4">

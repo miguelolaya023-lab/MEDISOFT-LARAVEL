@@ -2,29 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable([
-    'name',
-    'email',
-    'password',
-    'tipo_documento',
-    'numero_documento',
-    'nombres',
-    'apellidos',
-    'telefono',
-    'cargo',
-    'estado',
-    'tipo_usuario',
-])]
+#[Fillable(['name', 'email', 'password', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'cargo', 'estado', 'tipo_usuario', 'rol_id', 'motivo_inactivacion', 'ultimo_acceso'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -35,137 +24,68 @@ class User extends Authenticatable
 
     public const TIPO_USUARIO_INTERNO = 'interno';
 
-    /**
-     * Consulta usuarios internos segun el metodo definido en el diagrama de clases.
-     *
-     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
-     * a UsuarioInterno en el UML. La consulta solo incluye usuarios internos y,
-     * cuando recibe un criterio, usa coincidencias parciales para documento y nombres.
-     *
-     * @return Builder<self>
-     */
+    public function rol(): BelongsTo
+    {
+        return $this->belongsTo(Rol::class);
+    }
+
+    public function medico(): HasOne
+    {
+        return $this->hasOne(Medico::class);
+    }
+
+    public function estaActivo(): bool
+    {
+        return $this->estado === 'activo';
+    }
+
+    public function esInterno(): bool
+    {
+        return in_array($this->tipo_usuario, [self::TIPO_USUARIO_INTERNO, self::TIPO_USUARIO_MEDICO], true);
+    }
+
+    public function tienePermiso(string $codigo): bool
+    {
+        return $this->estaActivo() && $this->esInterno() && $this->rol()->whereHas('permisos', fn (Builder $query) => $query->where('codigo', $codigo))->exists();
+    }
+
+    public function puedeAdministrarUsuarios(): bool
+    {
+        foreach (['RF-004', 'RF-007', 'RF-054', 'RF-055'] as $codigo) {
+            if (! $this->tienePermiso($codigo)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static function consultarUsuarioInterno(?string $criterio): Builder
     {
-        $consulta = self::query()
-            ->where('tipo_usuario', self::TIPO_USUARIO_INTERNO);
-
+        $consulta = self::query()->whereIn('tipo_usuario', [self::TIPO_USUARIO_INTERNO, self::TIPO_USUARIO_MEDICO]);
         $criterio = trim((string) $criterio);
-
         if ($criterio === '') {
             return $consulta;
         }
 
-        $busquedaParcial = '%'.$criterio.'%';
-
-        return $consulta->where(function (Builder $query) use ($busquedaParcial): void {
-            // La busqueda usa LIKE para permitir coincidencias parciales como "1118", "Mig" u "Olaya".
-            $query->where('numero_documento', 'like', $busquedaParcial)
-                ->orWhere('nombres', 'like', $busquedaParcial)
-                ->orWhere('apellidos', 'like', $busquedaParcial)
-                ->orWhere('name', 'like', $busquedaParcial);
+        return $consulta->where(function (Builder $query) use ($criterio): void {
+            $valor = '%'.$criterio.'%';
+            $query->where('numero_documento', 'like', $valor)->orWhere('nombres', 'like', $valor)->orWhere('apellidos', 'like', $valor)->orWhere('name', 'like', $valor);
         });
     }
 
-    /**
-     * Crea un UsuarioInterno segun el metodo definido en el diagrama de clases.
-     *
-     * En el codigo Laravel este modelo se llama User por la integracion con Breeze,
-     * pero conceptualmente representa a UsuarioInterno dentro del UML de MEDISOFT.
-     *
-     * @param  array{tipo_documento: string, numero_documento: string, nombres: string, apellidos: string, email: string, telefono: string, cargo: string, estado: string}  $datos
-     */
     public static function crearUsuarioInterno(array $datos): self
     {
-        // StoreUserRequest ya valido los datos antes de que el controlador llame al modelo.
-        $nombreCompleto = trim($datos['nombres'].' '.$datos['apellidos']);
-
-        return self::query()->create([
-            ...$datos,
-            // Breeze usa el campo name; se genera desde nombres y apellidos para conservar compatibilidad.
-            'name' => $nombreCompleto,
-            'email' => Str::lower($datos['email']),
-            // tipo_usuario distingue al UsuarioInterno de otros tipos de usuarios del sistema.
-            'tipo_usuario' => self::TIPO_USUARIO_INTERNO,
-            // El requisito no pide contrasena explicita, por eso se genera una temporal en servidor.
-            // En una fase futura puede enviarse o restablecerse por correo.
-            'password' => Str::password(16),
-        ]);
+        return self::query()->create([...$datos, 'name' => trim($datos['nombres'].' '.$datos['apellidos']), 'email' => Str::lower($datos['email']), 'tipo_usuario' => self::TIPO_USUARIO_INTERNO, 'password' => Str::password(16)]);
     }
 
-    /**
-     * Actualiza un UsuarioInterno segun el metodo definido en el diagrama de clases.
-     *
-     * Aunque Laravel conserva el nombre tecnico User por Breeze, en el UML este
-     * modelo representa conceptualmente a UsuarioInterno.
-     *
-     * @param  array{tipo_documento: string, numero_documento: string, nombres: string, apellidos: string, email: string, telefono: string, cargo: string}  $datos
-     */
     public function actualizarUsuarioInterno(array $datos): bool
     {
-        // UpdateUserRequest ya valido los datos antes de que el controlador llame al modelo.
-        $nombreCompleto = trim($datos['nombres'].' '.$datos['apellidos']);
-
-        return $this->update([
-            ...$datos,
-            // Breeze requiere name, por eso se regenera desde nombres y apellidos.
-            'name' => $nombreCompleto,
-            // El correo se normaliza a minusculas para mantener el comportamiento existente.
-            'email' => Str::lower($datos['email']),
-            // Este metodo solo actualiza datos propios del usuario interno.
-            // No cambia password ni tipo_usuario; esas responsabilidades pertenecen a otros flujos.
-        ]);
+        return $this->update([...$datos, 'name' => trim($datos['nombres'].' '.$datos['apellidos']), 'email' => Str::lower($datos['email'])]);
     }
 
-    /**
-     * Inactiva un UsuarioInterno segun el metodo definido en el diagrama de clases.
-     *
-     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
-     * a UsuarioInterno en el UML. Este metodo no elimina el registro: solo cambia
-     * el campo estado a inactivo.
-     */
-    public function inactivarUsuarioInterno(): bool
-    {
-        return $this->update([
-            'estado' => 'inactivo',
-        ]);
-    }
-
-    /**
-     * Activa un UsuarioInterno segun el metodo definido en el diagrama de clases.
-     *
-     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
-     * a UsuarioInterno en el UML. Este metodo no elimina ni recrea el registro:
-     * solo cambia el campo estado a activo.
-     */
-    public function activarUsuarioInterno(): bool
-    {
-        return $this->update([
-            'estado' => 'activo',
-        ]);
-    }
-
-    /**
-     * Elimina fisicamente un UsuarioInterno segun el metodo definido en el diagrama de clases.
-     *
-     * User conserva su nombre tecnico por Breeze, pero conceptualmente representa
-     * a UsuarioInterno en el UML. Este metodo ejecuta delete(), por lo que el
-     * registro se borra de la tabla users y no queda como usuario inactivo.
-     */
-    public function eliminarUsuarioInterno(): bool
-    {
-        return $this->delete();
-    }
-
-    /**
-     * Obtiene los atributos que deben convertirse automaticamente.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return ['email_verified_at' => 'datetime', 'ultimo_acceso' => 'datetime', 'password' => 'hashed'];
     }
 }

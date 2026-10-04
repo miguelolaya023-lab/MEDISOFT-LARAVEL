@@ -2,147 +2,139 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AssignUserRoleRequest;
+use App\Http\Requests\ChangeUserStateRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Auditoria;
+use App\Models\Rol;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    /**
-     * Muestra el listado de usuarios internos.
-     */
     public function index(Request $request): View
     {
-        // El controlador coordina la busqueda enviada por la vista mediante el parametro GET "buscar".
         $criterio = trim((string) $request->query('buscar', ''));
 
-        return view('usuarios.index', [
-            'usuarios' => User::consultarUsuarioInterno($criterio)
-                ->latest()
-                ->paginate(10)
-                ->withQueryString(),
-            'buscar' => $criterio,
-        ]);
+        return view('usuarios.index', ['usuarios' => User::consultarUsuarioInterno($criterio)->with('rol')->latest()->paginate(10)->withQueryString(), 'buscar' => $criterio]);
     }
 
-    /**
-     * Show the form for creating an internal user.
-     */
     public function create(): View
     {
-        return view('usuarios.create');
+        return view('usuarios.create', ['roles' => Rol::query()->orderBy('nombre')->get()]);
     }
 
-    /**
-     * Show the form for editing an internal user.
-     */
+    public function show(User $user): View
+    {
+        return view('usuarios.show', ['usuario' => $user->load('rol', 'medico'), 'roles' => Rol::query()->orderBy('nombre')->get()]);
+    }
+
     public function edit(User $user): View
     {
-        $this->ensureInternalUser($user);
-
-        return view('usuarios.edit', [
-            'usuario' => $user,
-        ]);
+        return view('usuarios.edit', ['usuario' => $user]);
     }
 
-    /**
-     * Store a newly created internal user.
-     */
     public function store(StoreUserRequest $request): RedirectResponse
     {
-        // StoreUserRequest ejecuta la validacion antes de llegar aqui; el controlador solo coordina el flujo.
-        $validated = $request->validated();
+        $usuario = DB::transaction(function () use ($request): User {
+            $datos = $request->validated();
+            $usuario = User::crearUsuarioInterno(Arr::except($datos, ['es_medico', 'registro_profesional', 'especialidad']));
+            if ($request->boolean('es_medico')) {
+                $usuario->medico()->create(Arr::only($datos, ['registro_profesional', 'especialidad']));
+            }
+            Auditoria::registrar('USUARIO_CREADO', $usuario, 'Cuenta interna creada; rol '.$usuario->rol_id.'.');
+            Auditoria::registrar('ROL_ASIGNADO', $usuario, 'Rol inicial '.$usuario->rol_id.'.');
 
-        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
-        // al mensaje UsuarioInterno.crearUsuarioInterno(datos) del diagrama de secuencia.
-        User::crearUsuarioInterno($validated);
+            return $usuario;
+        });
 
-        return Redirect::route('usuarios.index')
-            ->with('status', 'Usuario creado correctamente.');
+        return redirect()->route('usuarios.show', $usuario)->with('status', 'Usuario creado correctamente. La contraseña puede establecerse mediante recuperación.');
     }
 
-    /**
-     * Actualiza un usuario interno existente.
-     */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
-        $this->ensureInternalUser($user);
+        DB::transaction(function () use ($request, $user): void {
+            $datos = $request->validated();
+            $user->actualizarUsuarioInterno(Arr::except($datos, ['registro_profesional', 'especialidad']));
+            $perfil = Arr::only($datos, ['registro_profesional', 'especialidad']);
+            if ($perfil !== []) {
+                $user->medico()->update($perfil);
+            }
+            Auditoria::registrar('USUARIO_ACTUALIZADO', $user, 'Datos de identificación y contacto actualizados.');
+        });
 
-        // UpdateUserRequest ejecuta la validacion antes de llegar aqui; el controlador coordina el flujo.
-        $validated = $request->validated();
-
-        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
-        // al mensaje UsuarioInterno.actualizarUsuarioInterno(idUsuario, datos) del diagrama de secuencia.
-        $user->actualizarUsuarioInterno($validated);
-
-        return Redirect::route('usuarios.index')
-            ->with('status', 'Usuario actualizado correctamente.');
+        return redirect()->route('usuarios.show', $user)->with('status', 'Usuario actualizado correctamente.');
     }
 
-    /**
-     * Inactiva un usuario interno sin eliminarlo del sistema.
-     */
-    public function inactivate(User $user): RedirectResponse
+    public function inactivate(ChangeUserStateRequest $request, User $user): RedirectResponse
     {
-        $this->ensureInternalUser($user);
-
-        abort_if($user->getKey() === Auth::id(), 403);
-
-        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
-        // al metodo inactivarUsuarioInterno() del diagrama y solo cambia el campo estado.
-        $user->inactivarUsuarioInterno();
-
-        return Redirect::route('usuarios.index')
-            ->with('status', 'Usuario inactivado correctamente.');
+        return $this->changeState($request, $user, 'inactivo');
     }
 
-    /**
-     * Activa un usuario interno previamente inactivo.
-     */
-    public function activate(User $user): RedirectResponse
+    public function activate(ChangeUserStateRequest $request, User $user): RedirectResponse
     {
-        $this->ensureInternalUser($user);
-
-        // User representa conceptualmente a UsuarioInterno en el UML; este llamado corresponde
-        // al metodo activarUsuarioInterno() del diagrama y solo cambia el campo estado.
-        $user->activarUsuarioInterno();
-
-        return Redirect::route('usuarios.index')
-            ->with('status', 'Usuario activado correctamente.');
+        return $this->changeState($request, $user, 'activo');
     }
 
-    /**
-     * Elimina fisicamente un usuario interno inactivo.
-     */
-    public function destroy(User $user): RedirectResponse
+    private function changeState(ChangeUserStateRequest $request, User $user, string $estado): RedirectResponse
     {
-        $this->ensureInternalUser($user);
+        DB::transaction(function () use ($request, $user, $estado): void {
+            $this->lockAdministration();
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+            if ($user->estado === $estado) {
+                throw ValidationException::withMessages(['motivo' => 'La cuenta ya tiene ese estado.']);
+            }
+            if ($estado === 'inactivo') {
+                $this->protectLastAdministrator($user);
+                abort_if($user->id === $request->user()->id, 403);
+            }
+            $motivo = $request->validated('motivo');
+            $user->update(['estado' => $estado, ...($estado === 'inactivo' ? ['motivo_inactivacion' => $motivo] : [])]);
+            Auditoria::registrar($estado === 'activo' ? 'USUARIO_REACTIVADO' : 'USUARIO_INACTIVADO', $user, $motivo);
+        });
 
-        abort_if($user->getKey() === Auth::id(), 403);
+        return redirect()->route('usuarios.show', $user)->with('status', $estado === 'activo' ? 'Usuario activado correctamente.' : 'Usuario inactivado correctamente.');
+    }
 
-        if ($user->estado !== 'inactivo') {
-            return Redirect::route('usuarios.index')
-                ->with('status', 'No es posible eliminar un usuario activo. Primero debe ser inactivado.');
+    public function assignRole(AssignUserRoleRequest $request, User $user): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $user): void {
+            $this->lockAdministration();
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+            $anterior = $user->rol_id;
+            $nuevo = (int) $request->validated('rol_id');
+            if ($anterior === $nuevo) {
+                return;
+            }
+            $wasAdministrator = $user->puedeAdministrarUsuarios();
+            $user->rol_id = $nuevo;
+            if ($wasAdministrator && ! $user->puedeAdministrarUsuarios()) {
+                $user->rol_id = $anterior;
+                $this->protectLastAdministrator($user);
+                $user->rol_id = $nuevo;
+            }
+            $user->save();
+            Auditoria::registrar('ROL_CAMBIADO', $user, 'Rol '.$anterior.' cambiado a '.$nuevo.'.');
+        });
+
+        return redirect()->route('usuarios.show', $user)->with('status', 'Rol asignado correctamente.');
+    }
+
+    private function lockAdministration(): void
+    {
+        Rol::query()->orderBy('id')->lockForUpdate()->get();
+    }
+
+    private function protectLastAdministrator(User $user): void
+    {
+        if ($user->puedeAdministrarUsuarios() && ! User::query()->where('estado', 'activo')->where('id', '!=', $user->id)->lockForUpdate()->get()->contains(fn (User $candidate): bool => $candidate->puedeAdministrarUsuarios())) {
+            throw ValidationException::withMessages(['rol_id' => 'Debe conservarse al menos una cuenta administrativa activa.', 'motivo' => 'Debe conservarse al menos una cuenta administrativa activa.']);
         }
-
-        // El controlador verifica las reglas del flujo y delega en el modelo el metodo UML.
-        // Solo se eliminan usuarios inactivos para evitar borrar usuarios que aun estan en uso.
-        $user->eliminarUsuarioInterno();
-
-        return Redirect::route('usuarios.index')
-            ->with('status', 'Usuario eliminado correctamente.');
-    }
-
-    /**
-     * Garantiza que solo usuarios internos se gestionen desde este modulo.
-     */
-    private function ensureInternalUser(User $user): void
-    {
-        abort_if($user->tipo_usuario !== User::TIPO_USUARIO_INTERNO, 404);
     }
 }
