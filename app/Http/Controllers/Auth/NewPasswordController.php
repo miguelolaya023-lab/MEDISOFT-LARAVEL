@@ -3,61 +3,57 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Auditoria;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
-    /**
-     * Display the password reset view.
-     */
     public function create(Request $request): View
     {
         return view('auth.reset-password', ['request' => $request]);
     }
 
-    /**
-     * Handle an incoming new password request.
-     *
-     * @throws ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'email.required' => 'Ingresa tu correo electrónico.', 'email.email' => 'Ingresa un correo electrónico válido.',
+            'password.required' => 'Ingresa una nueva contraseña.', 'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos :min caracteres.',
+            'token.required' => 'El enlace no es válido. Solicita uno nuevo.',
         ]);
+        $credentials = [
+            ...$validated, 'email' => Str::lower(trim($validated['email'])),
+            'tipo_usuario' => [User::TIPO_USUARIO_INTERNO, User::TIPO_USUARIO_MEDICO],
+        ];
+        $status = DB::transaction(function () use ($credentials): string {
+            DB::table(config('auth.passwords.'.config('auth.defaults.passwords').'.table'))
+                ->where('email', $credentials['email'])->lockForUpdate()->first();
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
-
+            return Password::reset($credentials, function (User $user, #[\SensitiveParameter] string $password): void {
+                $user->forceFill(['password' => Hash::make($password), 'remember_token' => Str::random(60)])->save();
+                Auditoria::registrar('CONTRASENA_RESTABLECIDA', $user, 'Restablecimiento mediante enlace validado; estado y rol conservados.', $user->getKey());
+                if (config('session.driver') === 'database') {
+                    DB::connection(config('session.connection'))->table(config('session.table'))->where('user_id', $user->getKey())->delete();
+                }
                 event(new PasswordReset($user));
-            }
-        );
+            });
+        });
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', 'Contraseña restablecida. Inicia sesión con tu nueva contraseña; el estado de la cuenta se conserva.')
+            : back()->withInput($request->only('email'))->withErrors(['email' => 'El enlace no es válido o ha caducado. Solicita uno nuevo.']);
     }
 }
