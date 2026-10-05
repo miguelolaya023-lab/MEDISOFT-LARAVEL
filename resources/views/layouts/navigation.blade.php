@@ -18,6 +18,22 @@
                         Usuarios
                     </x-nav-link>
                     @endcan
+                    @canany(['viewAny', 'search', 'create'], \App\Models\Paciente::class)
+                    <div class="flex items-center">
+                        <x-dropdown align="left" width="48">
+                            <x-slot name="trigger">
+                                <button type="button" class="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600">
+                                    Pacientes <span aria-hidden="true">▾</span>
+                                </button>
+                            </x-slot>
+                            <x-slot name="content">
+                                @can('viewAny', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.index')">Listar pacientes</x-dropdown-link>@endcan
+                                @can('search', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.search')">Consultar paciente</x-dropdown-link>@endcan
+                                @can('create', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.create')">Registrar paciente</x-dropdown-link>@endcan
+                            </x-slot>
+                        </x-dropdown>
+                    </div>
+                    @endcanany
                 </div>
             </div>
 
@@ -80,6 +96,21 @@
             @can('viewAny', \App\Models\User::class)
             <x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                 Usuarios
+            </x-responsive-nav-link>
+            @endcan
+            @can('viewAny', \App\Models\Paciente::class)
+            <x-responsive-nav-link :href="route('pacientes.index')" :active="request()->routeIs('pacientes.index')">
+                Pacientes
+            </x-responsive-nav-link>
+            @endcan
+            @can('search', \App\Models\Paciente::class)
+            <x-responsive-nav-link :href="route('pacientes.search')" :active="request()->routeIs('pacientes.search', 'pacientes.show')">
+                Consultar paciente
+            </x-responsive-nav-link>
+            @endcan
+            @can('create', \App\Models\Paciente::class)
+            <x-responsive-nav-link :href="route('pacientes.create')" :active="request()->routeIs('pacientes.create')">
+                Registrar paciente
             </x-responsive-nav-link>
             @endcan
         </div>
