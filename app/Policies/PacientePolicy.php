@@ -31,4 +31,19 @@ class PacientePolicy
     {
         return $user->tienePermiso('RF-009');
     }
+
+    public function inactivate(User $user, Paciente $paciente): bool
+    {
+        return $user->tienePermiso('RF-012');
+    }
+
+    public function reactivate(User $user, Paciente $paciente): bool
+    {
+        return $this->update($user, $paciente);
+    }
+
+    public function changeState(User $user, Paciente $paciente): bool
+    {
+        return $this->inactivate($user, $paciente) || $this->reactivate($user, $paciente);
+    }
 }

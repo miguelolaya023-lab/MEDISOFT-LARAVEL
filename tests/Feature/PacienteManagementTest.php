@@ -444,14 +444,14 @@ class PacienteManagementTest extends TestCase
         $this->seed(PacientePermissionsSeeder::class);
         foreach (['Administrador', 'Médico', 'Administrativo'] as $nombre) {
             $rol = Rol::query()->where('nombre', $nombre)->firstOrFail();
-            foreach (['RF-008', 'RF-009', 'RF-010', 'RF-011'] as $codigo) {
+            foreach (['RF-008', 'RF-009', 'RF-010', 'RF-011', 'RF-012'] as $codigo) {
                 $this->assertTrue($rol->permisos()->where('codigo', $codigo)->exists());
             }
         }
         foreach ($anteriores as $codigo) {
             $this->assertTrue($admin->permisos()->where('codigo', $codigo)->exists());
         }
-        $this->assertDatabaseCount('permisos', 10);
+        $this->assertDatabaseCount('permisos', 11);
         $this->assertFalse(Rol::query()->where('nombre', 'Administrativo')->first()->permisos()->where('codigo', 'RF-004')->exists());
     }
 
@@ -470,14 +470,15 @@ class PacienteManagementTest extends TestCase
         }
     }
 
-    public function test_patient_update_requires_its_permission_and_state_delete_and_clinical_flows_remain_unavailable(): void
+    public function test_patient_update_and_state_require_permissions_and_delete_and_clinical_flows_remain_unavailable(): void
     {
         $paciente = Paciente::factory()->create();
         $this->actingAs($this->autorizado());
         $this->get('/pacientes/'.$paciente->id.'/edit')->assertForbidden();
         $this->put(route('pacientes.update', $paciente), $this->datos())->assertForbidden();
         $this->delete(route('pacientes.show', $paciente))->assertMethodNotAllowed();
-        $this->patch('/pacientes/'.$paciente->id.'/inactivar')->assertNotFound();
+        $this->patch('/pacientes/'.$paciente->id.'/inactivar')->assertForbidden();
+        $this->patch('/pacientes/'.$paciente->id.'/reactivar')->assertForbidden();
         $this->get('/historias-clinicas/'.$paciente->id)->assertNotFound();
         $this->assertDatabaseCount('pacientes', 1);
     }

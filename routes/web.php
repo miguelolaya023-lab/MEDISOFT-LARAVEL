@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Models\Paciente;
@@ -16,6 +17,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/pacientes', [PacienteController::class, 'store'])->name('pacientes.store');
     Route::get('/pacientes/{paciente}/edit', [PacienteController::class, 'edit'])->can('update', 'paciente')->name('pacientes.edit');
     Route::match(['put', 'patch'], '/pacientes/{paciente}', [PacienteController::class, 'update'])->name('pacientes.update');
+    Route::get('/pacientes/{paciente}/estado', [PacienteStateController::class, 'show'])->can('changeState', 'paciente')->name('pacientes.state');
+    Route::patch('/pacientes/{paciente}/inactivar', [PacienteStateController::class, 'inactivate'])->name('pacientes.inactivate');
+    Route::patch('/pacientes/{paciente}/reactivar', [PacienteStateController::class, 'reactivate'])->name('pacientes.reactivate');
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->can('view', 'paciente')->name('pacientes.show');
     Route::get('/usuarios', [UserController::class, 'index'])->can('viewAny', User::class)->name('usuarios.index');
     Route::get('/usuarios/create', [UserController::class, 'create'])->can('create', User::class)->name('usuarios.create');

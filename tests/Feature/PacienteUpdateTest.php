@@ -18,7 +18,7 @@ use Tests\TestCase;
 
 /**
  * RF-009 administrativo: CA-009-02/04; CA-009-01 se revalidará con citas/pagos.
- * CA-009-03 (reactivación) queda pendiente del flujo de estados.
+ * CA-009-03 (reactivación) se comprueba por separado en PacienteStateTest.
  */
 class PacienteUpdateTest extends TestCase
 {
