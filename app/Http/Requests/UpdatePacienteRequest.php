@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * RF-009: edición administrativa; reactivación pendiente del flujo de estados.
+ * RF-009: edición administrativa; el estado se gestiona en su flujo separado.
  */
 class UpdatePacienteRequest extends FormRequest
 {

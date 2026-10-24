@@ -12,6 +12,11 @@
                 </dl>
                 <div class="flex flex-wrap gap-4">
                     @can('update', $paciente)<a href="{{ route('pacientes.edit', $paciente) }}" class="text-sm text-teal-700 underline">Editar paciente</a>@endcan
+                    @if ($paciente->estado === 'ACTIVO')
+                        @can('inactivate', $paciente)<a href="{{ route('pacientes.state', $paciente) }}" class="text-sm text-teal-700 underline">Inactivar paciente</a>@endcan
+                    @elseif ($paciente->estado === 'INACTIVO')
+                        @can('reactivate', $paciente)<a href="{{ route('pacientes.state', $paciente) }}" class="text-sm text-teal-700 underline">Reactivar paciente</a>@endcan
+                    @endif
                     @can('search', \App\Models\Paciente::class)<a href="{{ route('pacientes.search') }}" class="text-sm text-teal-700 underline">Consultar otro paciente</a>@endcan
                     @can('viewAny', \App\Models\Paciente::class)<a href="{{ route('pacientes.index') }}" class="text-sm text-teal-700 underline">Volver al listado</a>@endcan
                 </div>
