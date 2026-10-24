@@ -26,4 +26,9 @@ class PacientePolicy
     {
         return $user->tienePermiso('RF-011');
     }
+
+    public function update(User $user, Paciente $paciente): bool
+    {
+        return $user->tienePermiso('RF-009');
+    }
 }

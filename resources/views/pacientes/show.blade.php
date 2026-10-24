@@ -11,6 +11,7 @@
                     <div><dt class="font-semibold text-gray-800">Fecha de nacimiento</dt><dd class="text-gray-600">{{ $paciente->fecha_nacimiento->format('Y-m-d') }}</dd></div>
                 </dl>
                 <div class="flex flex-wrap gap-4">
+                    @can('update', $paciente)<a href="{{ route('pacientes.edit', $paciente) }}" class="text-sm text-teal-700 underline">Editar paciente</a>@endcan
                     @can('search', \App\Models\Paciente::class)<a href="{{ route('pacientes.search') }}" class="text-sm text-teal-700 underline">Consultar otro paciente</a>@endcan
                     @can('viewAny', \App\Models\Paciente::class)<a href="{{ route('pacientes.index') }}" class="text-sm text-teal-700 underline">Volver al listado</a>@endcan
                 </div>
