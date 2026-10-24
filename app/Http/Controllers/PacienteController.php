@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListPacienteRequest;
 use App\Http\Requests\SearchPacienteRequest;
 use App\Http\Requests\StorePacienteRequest;
+use App\Http\Requests\UpdatePacienteRequest;
 use App\Models\Auditoria;
 use App\Models\Paciente;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,5 +88,36 @@ class PacienteController extends Controller
     public function show(Paciente $paciente): View
     {
         return view('pacientes.show', compact('paciente'));
+    }
+
+    public function edit(Paciente $paciente): View
+    {
+        return view('pacientes.edit', compact('paciente'));
+    }
+
+    public function update(UpdatePacienteRequest $request, Paciente $paciente): RedirectResponse
+    {
+        try {
+            DB::transaction(function () use ($request, $paciente): void {
+                $paciente = Paciente::query()->lockForUpdate()->findOrFail($paciente->getKey());
+                $paciente->update($request->validated());
+                Auditoria::query()->create([
+                    'user_id' => $request->user()->getKey(), 'accion' => 'PACIENTE_ACTUALIZADO',
+                    'entidad' => 'Paciente', 'registro_id' => $paciente->getKey(), 'fecha_hora' => now(),
+                    'resultado' => 'EXITO', 'descripcion' => 'Datos administrativos actualizados; estado e historia conservados.',
+                ]);
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! Paciente::query()->where('tipo_documento', $request->validated('tipo_documento'))
+                ->where('numero_documento', $request->validated('numero_documento'))
+                ->whereKeyNot($paciente->getKey())->exists()) {
+                throw $exception;
+            }
+            throw ValidationException::withMessages(['numero_documento' => StorePacienteRequest::DUPLICATE_DOCUMENT_MESSAGE]);
+        }
+
+        $destino = $request->user()->can('view', $paciente) ? route('pacientes.show', $paciente) : route('pacientes.edit', $paciente);
+
+        return redirect($destino)->with('status', 'Datos administrativos del paciente actualizados correctamente.');
     }
 }

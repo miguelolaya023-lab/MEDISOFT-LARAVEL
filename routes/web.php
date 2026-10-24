@@ -14,6 +14,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/pacientes/buscar', [PacienteController::class, 'search'])->name('pacientes.search');
     Route::get('/pacientes/create', [PacienteController::class, 'create'])->can('create', Paciente::class)->name('pacientes.create');
     Route::post('/pacientes', [PacienteController::class, 'store'])->name('pacientes.store');
+    Route::get('/pacientes/{paciente}/edit', [PacienteController::class, 'edit'])->can('update', 'paciente')->name('pacientes.edit');
+    Route::match(['put', 'patch'], '/pacientes/{paciente}', [PacienteController::class, 'update'])->name('pacientes.update');
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->can('view', 'paciente')->name('pacientes.show');
     Route::get('/usuarios', [UserController::class, 'index'])->can('viewAny', User::class)->name('usuarios.index');
     Route::get('/usuarios/create', [UserController::class, 'create'])->can('create', User::class)->name('usuarios.create');

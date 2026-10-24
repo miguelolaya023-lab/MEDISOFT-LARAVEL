@@ -12,7 +12,7 @@ class PacientePermissionsSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function (): void {
-            $catalogo = ['RF-008' => 'Registrar pacientes', 'RF-010' => 'Consultar pacientes', 'RF-011' => 'Listar pacientes'];
+            $catalogo = ['RF-008' => 'Registrar pacientes', 'RF-009' => 'Actualizar datos administrativos de pacientes', 'RF-010' => 'Consultar pacientes', 'RF-011' => 'Listar pacientes'];
             foreach ($catalogo as $codigo => $descripcion) {
                 Permiso::query()->firstOrCreate(['codigo' => $codigo], ['descripcion' => $descripcion]);
             }
