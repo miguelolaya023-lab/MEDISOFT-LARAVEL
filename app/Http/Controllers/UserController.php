@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignUserRoleRequest;
 use App\Http\Requests\ChangeUserStateRequest;
+use App\Http\Requests\StoreMedicoProfileRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Auditoria;
 use App\Models\Rol;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -70,6 +72,27 @@ class UserController extends Controller
         });
 
         return redirect()->route('usuarios.show', $user)->with('status', 'Usuario actualizado correctamente.');
+    }
+
+    public function storeMedicoProfile(StoreMedicoProfileRequest $request, User $user): RedirectResponse
+    {
+        try {
+            DB::transaction(function () use ($request, $user): void {
+                $user = User::query()->lockForUpdate()->findOrFail($user->getKey());
+                if ($user->medico()->exists()) {
+                    throw ValidationException::withMessages(['registrar_perfil_medico' => StoreMedicoProfileRequest::DUPLICATE_PROFILE_MESSAGE]);
+                }
+                $perfil = $user->medico()->create($request->safe()->only(['registro_profesional', 'especialidad']));
+                Auditoria::registrar('PERFIL_MEDICO_REGISTRADO', $user, 'Perfil profesional Médico registrado; perfil '.$perfil->getKey().'.');
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! $user->medico()->exists()) {
+                throw $exception;
+            }
+            throw ValidationException::withMessages(['registrar_perfil_medico' => StoreMedicoProfileRequest::DUPLICATE_PROFILE_MESSAGE]);
+        }
+
+        return redirect()->route('usuarios.edit', $user)->with('status', 'Perfil profesional Médico registrado. El rol y los permisos no cambiaron.');
     }
 
     public function inactivate(ChangeUserStateRequest $request, User $user): RedirectResponse
