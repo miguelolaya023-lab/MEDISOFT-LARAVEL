@@ -11,6 +11,7 @@
                     <div><dt class="font-semibold text-gray-800">Fecha de nacimiento</dt><dd class="text-gray-600">{{ $paciente->fecha_nacimiento->format('Y-m-d') }}</dd></div>
                 </dl>
                 <div class="flex flex-wrap gap-4">
+                    @can('viewAny', \App\Models\AntecedenteClinico::class)<a href="{{ route('antecedentes.index', $paciente) }}" class="text-sm text-teal-700 underline">Antecedentes clínicos</a>@endcan
                     @can('update', $paciente)<a href="{{ route('pacientes.edit', $paciente) }}" class="text-sm text-teal-700 underline">Editar paciente</a>@endcan
                     @if ($paciente->estado === 'ACTIVO')
                         @can('inactivate', $paciente)<a href="{{ route('pacientes.state', $paciente) }}" class="text-sm text-teal-700 underline">Inactivar paciente</a>@endcan
