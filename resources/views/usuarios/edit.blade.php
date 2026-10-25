@@ -8,6 +8,8 @@
     <div class="py-12">
         <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+                @if (session('status'))<p role="status" class="mb-6 text-sm text-teal-800">{{ session('status') }}</p>@endif
+                <x-input-error :messages="$errors->all()" class="mb-6" />
                 <form method="POST" action="{{ route('usuarios.update', $usuario) }}" class="space-y-6">
                     @csrf
                     @method('PUT')
@@ -69,7 +71,7 @@
                         </div>
                         @if ($usuario->medico)
                             @foreach (['registro_profesional' => 'Registro profesional', 'especialidad' => 'Especialidad'] as $campo => $label)
-                                <div><x-input-label :for="$campo" :value="$label" /><x-text-input :id="$campo" :name="$campo" :value="old($campo, $usuario->medico->$campo)" required class="mt-1 block w-full" /><x-input-error :messages="$errors->get($campo)" /></div>
+                                <div><x-input-label :for="$campo" :value="$label" /><x-text-input :id="$campo" :name="$campo" :value="old('registrar_perfil_medico') ? $usuario->medico->$campo : old($campo, $usuario->medico->$campo)" required class="mt-1 block w-full" /><x-input-error :messages="$errors->get($campo)" /></div>
                             @endforeach
                         @endif
                     </div>
@@ -84,6 +86,31 @@
                         </button>
                     </div>
                 </form>
+                @unless ($usuario->medico)
+                    <section class="mt-6 border-t border-gray-100 pt-6" aria-labelledby="registrar-perfil-medico">
+                        <h3 id="registrar-perfil-medico" class="font-semibold text-gray-800">Registrar perfil profesional Médico</h3>
+                        <p id="perfil-medico-ayuda" class="mt-2 text-sm text-gray-600">Registrar el perfil no cambia el rol, no concede permisos y no modifica los datos de la cuenta. El cambio de rol por sí solo no crea un perfil profesional.</p>
+                        <form method="POST" action="{{ route('usuarios.medico.store', $usuario) }}" class="mt-4 space-y-4" x-data="{ registrarPerfil: {{ old('registrar_perfil_medico') === '1' ? 'true' : 'false' }} }">
+                            @csrf
+                            <label for="registrar_perfil_medico" class="flex items-center gap-2 text-sm text-gray-800">
+                                <input id="registrar_perfil_medico" name="registrar_perfil_medico" type="checkbox" value="1" required x-model="registrarPerfil" aria-describedby="perfil-medico-ayuda" class="rounded border-gray-300 text-teal-700 focus:ring-teal-600" />
+                                <span>Solicito registrar el perfil profesional Médico de este usuario.</span>
+                            </label>
+                            <x-input-error :messages="$errors->get('registrar_perfil_medico')" />
+                            <fieldset class="grid grid-cols-1 gap-6 md:grid-cols-2" x-show="registrarPerfil" :disabled="! registrarPerfil">
+                                <legend class="sr-only">Datos profesionales</legend>
+                                @foreach (['registro_profesional' => 'Registro profesional', 'especialidad' => 'Especialidad'] as $campo => $etiqueta)
+                                    <div>
+                                        <x-input-label :for="$campo" :value="$etiqueta" />
+                                        <x-text-input :id="$campo" :name="$campo" :value="is_string(old($campo)) ? old($campo) : ''" required maxlength="100" class="mt-1 block w-full" />
+                                        <x-input-error :messages="$errors->get($campo)" class="mt-2" />
+                                    </div>
+                                @endforeach
+                            </fieldset>
+                            <x-primary-button class="bg-teal-700 hover:bg-teal-800 focus:ring-teal-600">Registrar perfil Médico</x-primary-button>
+                        </form>
+                    </section>
+                @endunless
             </div>
         </div>
     </div>

@@ -33,6 +33,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->can('view', 'user')->name('usuarios.show');
     Route::get('/usuarios/{user}/edit', [UserController::class, 'edit'])->can('update', 'user')->name('usuarios.edit');
     Route::match(['put', 'patch'], '/usuarios/{user}', [UserController::class, 'update'])->name('usuarios.update');
+    Route::post('/usuarios/{user}/perfil-medico', [UserController::class, 'storeMedicoProfile'])->name('usuarios.medico.store');
     Route::patch('/usuarios/{user}/inactivar', [UserController::class, 'inactivate'])->name('usuarios.inactivate');
     Route::patch('/usuarios/{user}/activar', [UserController::class, 'activate'])->name('usuarios.activate');
     Route::patch('/usuarios/{user}/rol', [UserController::class, 'assignRole'])->name('usuarios.assign-role');
