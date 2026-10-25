@@ -34,6 +34,20 @@
                         </x-dropdown>
                     </div>
                     @endcanany
+                    @canany(['viewAny', 'search', 'create'], \App\Models\Eps::class)
+                    <div class="flex items-center">
+                        <x-dropdown align="left" width="48">
+                            <x-slot name="trigger">
+                                <button type="button" class="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600">EPS <span aria-hidden="true">▾</span></button>
+                            </x-slot>
+                            <x-slot name="content">
+                                @can('viewAny', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.index')">Listar EPS</x-dropdown-link>@endcan
+                                @can('search', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.search')">Consultar EPS</x-dropdown-link>@endcan
+                                @can('create', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.create')">Registrar EPS</x-dropdown-link>@endcan
+                            </x-slot>
+                        </x-dropdown>
+                    </div>
+                    @endcanany
                 </div>
             </div>
 
@@ -113,6 +127,9 @@
                 Registrar paciente
             </x-responsive-nav-link>
             @endcan
+            @can('viewAny', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.index')" :active="request()->routeIs('eps.index')">Listar EPS</x-responsive-nav-link>@endcan
+            @can('search', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.search')" :active="request()->routeIs('eps.search', 'eps.show')">Consultar EPS</x-responsive-nav-link>@endcan
+            @can('create', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.create')" :active="request()->routeIs('eps.create')">Registrar EPS</x-responsive-nav-link>@endcan
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
