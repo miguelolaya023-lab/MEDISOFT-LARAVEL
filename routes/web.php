@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\EpsController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Models\AntecedenteClinico;
+use App\Models\Eps;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/eps', [EpsController::class, 'index'])->name('eps.index');
+    Route::get('/eps/buscar', [EpsController::class, 'search'])->name('eps.search');
+    Route::get('/eps/create', [EpsController::class, 'create'])->can('create', Eps::class)->name('eps.create');
+    Route::post('/eps', [EpsController::class, 'store'])->name('eps.store');
+    Route::get('/eps/{eps}/edit', [EpsController::class, 'edit'])->whereNumber('eps')->can('update', 'eps')->name('eps.edit');
+    Route::match(['put', 'patch'], '/eps/{eps}', [EpsController::class, 'update'])->whereNumber('eps')->name('eps.update');
+    Route::get('/eps/{eps}', [EpsController::class, 'show'])->whereNumber('eps')->can('view', 'eps')->name('eps.show');
     Route::get('/pacientes/{paciente}/antecedentes', [AntecedenteClinicoController::class, 'index'])->can('viewAny', AntecedenteClinico::class)->name('antecedentes.index');
     Route::post('/pacientes/{paciente}/antecedentes', [AntecedenteClinicoController::class, 'store'])->name('antecedentes.store');
     Route::get('/pacientes/{paciente}/antecedentes/{antecedente}/edit', [AntecedenteClinicoController::class, 'edit'])->whereNumber('antecedente')->can('viewAny', AntecedenteClinico::class)->name('antecedentes.edit');

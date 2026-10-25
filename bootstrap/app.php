@@ -55,4 +55,35 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return $response->header('Cache-Control', 'no-store, private');
         });
+
+        $esFalloSqlEps = static function (Throwable $exception, Request $request): bool {
+            if (! $request->routeIs('eps.index', 'eps.search', 'eps.create', 'eps.store', 'eps.edit', 'eps.update', 'eps.show')) {
+                return false;
+            }
+            do {
+                if ($exception instanceof QueryException) {
+                    return true;
+                }
+                $exception = $exception->getPrevious();
+            } while ($exception !== null);
+
+            return false;
+        };
+        $exceptions->report(function (Throwable $exception) use ($esFalloSqlEps): ?bool {
+            if (! $esFalloSqlEps($exception, request())) {
+                return null;
+            }
+            Log::error('Error de base de datos en catálogo EPS.', ['modulo' => 'EPS', 'operacion' => request()->route()->getName()]);
+
+            return false;
+        });
+        $exceptions->render(function (Throwable $exception, Request $request) use ($esFalloSqlEps): ?Response {
+            if (! $esFalloSqlEps($exception, $request)) {
+                return null;
+            }
+            $mensaje = 'No fue posible completar la operación de EPS. Intente nuevamente.';
+
+            return ($request->expectsJson() ? response()->json(['message' => $mensaje], 503) : response($mensaje, 503))
+                ->header('Cache-Control', 'no-store, private');
+        });
     })->create();
