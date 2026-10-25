@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AntecedenteClinicoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
+use App\Models\AntecedenteClinico;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/pacientes/{paciente}/antecedentes', [AntecedenteClinicoController::class, 'index'])->can('viewAny', AntecedenteClinico::class)->name('antecedentes.index');
+    Route::post('/pacientes/{paciente}/antecedentes', [AntecedenteClinicoController::class, 'store'])->name('antecedentes.store');
+    Route::get('/pacientes/{paciente}/antecedentes/{antecedente}/edit', [AntecedenteClinicoController::class, 'edit'])->whereNumber('antecedente')->can('viewAny', AntecedenteClinico::class)->name('antecedentes.edit');
+    Route::match(['put', 'patch'], '/pacientes/{paciente}/antecedentes/{antecedente}', [AntecedenteClinicoController::class, 'update'])->whereNumber('antecedente')->name('antecedentes.update');
     Route::get('/pacientes', [PacienteController::class, 'index'])->name('pacientes.index');
     Route::get('/pacientes/buscar', [PacienteController::class, 'search'])->name('pacientes.search');
     Route::get('/pacientes/create', [PacienteController::class, 'create'])->can('create', Paciente::class)->name('pacientes.create');
