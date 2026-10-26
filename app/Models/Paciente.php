@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\PacienteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Paciente extends Model
@@ -30,6 +31,11 @@ class Paciente extends Model
     ];
 
     protected $attributes = ['estado' => 'ACTIVO'];
+
+    public function remisiones(): HasMany
+    {
+        return $this->hasMany(RemisionEps::class, 'paciente_id');
+    }
 
     public function historiaClinica(): HasOne
     {

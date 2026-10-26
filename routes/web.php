@@ -5,16 +5,27 @@ use App\Http\Controllers\EpsController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RemisionEpsController;
 use App\Http\Controllers\UserController;
 use App\Models\AntecedenteClinico;
 use App\Models\Eps;
 use App\Models\Paciente;
+use App\Models\RemisionEps;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/remisiones', [RemisionEpsController::class, 'index'])->name('remisiones.index');
+    Route::get('/remisiones/buscar', [RemisionEpsController::class, 'search'])->name('remisiones.search');
+    Route::get('/remisiones/create', [RemisionEpsController::class, 'create'])->can('create', RemisionEps::class)->name('remisiones.create');
+    Route::post('/remisiones', [RemisionEpsController::class, 'store'])->name('remisiones.store');
+    Route::get('/remisiones/{remision}/edit', [RemisionEpsController::class, 'edit'])->whereNumber('remision')->can('update', 'remision')->name('remisiones.edit');
+    Route::match(['put', 'patch'], '/remisiones/{remision}', [RemisionEpsController::class, 'update'])->whereNumber('remision')->name('remisiones.update');
+    Route::get('/remisiones/{remision}/estado', [RemisionEpsController::class, 'state'])->whereNumber('remision')->can('changeState', 'remision')->name('remisiones.state');
+    Route::patch('/remisiones/{remision}/estado', [RemisionEpsController::class, 'changeState'])->whereNumber('remision')->name('remisiones.changeState');
+    Route::get('/remisiones/{remision}', [RemisionEpsController::class, 'show'])->whereNumber('remision')->can('view', 'remision')->name('remisiones.show');
     Route::get('/eps', [EpsController::class, 'index'])->name('eps.index');
     Route::get('/eps/buscar', [EpsController::class, 'search'])->name('eps.search');
     Route::get('/eps/create', [EpsController::class, 'create'])->can('create', Eps::class)->name('eps.create');

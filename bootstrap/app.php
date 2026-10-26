@@ -86,4 +86,34 @@ return Application::configure(basePath: dirname(__DIR__))
             return ($request->expectsJson() ? response()->json(['message' => $mensaje], 503) : response($mensaje, 503))
                 ->header('Cache-Control', 'no-store, private');
         });
+
+        $esFalloSqlRemision = static function (Throwable $exception, Request $request): bool {
+            if (! $request->routeIs('remisiones.index', 'remisiones.search', 'remisiones.create', 'remisiones.store', 'remisiones.edit', 'remisiones.update', 'remisiones.show', 'remisiones.state', 'remisiones.changeState')) {
+                return false;
+            }
+            do {
+                if ($exception instanceof QueryException) {
+                    return true;
+                }
+                $exception = $exception->getPrevious();
+            } while ($exception !== null);
+
+            return false;
+        };
+        $exceptions->report(function (Throwable $exception) use ($esFalloSqlRemision): ?bool {
+            if (! $esFalloSqlRemision($exception, request())) {
+                return null;
+            }
+            Log::error('Error de base de datos en remisiones EPS.', ['modulo' => 'RemisionesEPS', 'operacion' => request()->route()->getName()]);
+
+            return false;
+        });
+        $exceptions->render(function (Throwable $exception, Request $request) use ($esFalloSqlRemision): ?Response {
+            if (! $esFalloSqlRemision($exception, $request)) {
+                return null;
+            }
+            $message = 'No fue posible completar la operación de remisiones. Intente nuevamente.';
+
+            return ($request->expectsJson() ? response()->json(['message' => $message], 503) : response($message, 503))->header('Cache-Control', 'no-store, private');
+        });
     })->create();

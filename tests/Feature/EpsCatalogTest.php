@@ -114,7 +114,7 @@ class EpsCatalogTest extends TestCase
         $this->assertSame($antes, $actor->refresh()->getAttributes());
         $this->assertDatabaseCount('users', 1);
         $this->assertFalse(Schema::hasColumn('eps', 'user_id'));
-        $this->assertFalse(Schema::hasTable('remisiones_eps'));
+        $this->assertDatabaseCount('remisiones_eps', 0);
         $audit = Auditoria::query()->sole();
         $this->assertSame('EPS_CREADA', $audit->accion);
         $this->assertSame('EPS', $audit->entidad);

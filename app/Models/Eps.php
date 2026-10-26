@@ -6,6 +6,7 @@ use Database\Factories\EpsFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Eps extends Model
@@ -18,6 +19,11 @@ class Eps extends Model
     protected $table = 'eps';
 
     protected $fillable = ['nit', 'nombre', 'telefono', 'correo_electronico', 'direccion', 'ciudad', 'estado'];
+
+    public function remisiones(): HasMany
+    {
+        return $this->hasMany(RemisionEps::class, 'eps_id');
+    }
 
     public static function normalizarNit(string $nit): string
     {
