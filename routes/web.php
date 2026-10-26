@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RemisionEpsController;
 use App\Http\Controllers\UserController;
 use App\Models\AntecedenteClinico;
+use App\Models\DisponibilidadMedica;
 use App\Models\Eps;
 use App\Models\Paciente;
 use App\Models\RemisionEps;
@@ -17,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
+    Route::post('/disponibilidad', [DisponibilidadMedicaController::class, 'store'])->name('disponibilidad.store');
+    Route::get('/disponibilidad/{disponibilidad}/edit', [DisponibilidadMedicaController::class, 'edit'])->whereNumber('disponibilidad')->can('update', 'disponibilidad')->name('disponibilidad.edit');
+    Route::match(['put', 'patch'], '/disponibilidad/{disponibilidad}', [DisponibilidadMedicaController::class, 'update'])->whereNumber('disponibilidad')->name('disponibilidad.update');
     Route::get('/remisiones', [RemisionEpsController::class, 'index'])->name('remisiones.index');
     Route::get('/remisiones/buscar', [RemisionEpsController::class, 'search'])->name('remisiones.search');
     Route::get('/remisiones/create', [RemisionEpsController::class, 'create'])->can('create', RemisionEps::class)->name('remisiones.create');

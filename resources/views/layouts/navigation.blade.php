@@ -13,6 +13,11 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         Panel
                     </x-nav-link>
+                    @can('viewAny', \App\Models\DisponibilidadMedica::class)
+                    <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
+                        Mi disponibilidad
+                    </x-nav-link>
+                    @endcan
                     @can('viewAny', \App\Models\User::class)
                     <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                         Usuarios
@@ -119,6 +124,11 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 Panel
             </x-responsive-nav-link>
+            @can('viewAny', \App\Models\DisponibilidadMedica::class)
+            <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
+                Mi disponibilidad
+            </x-responsive-nav-link>
+            @endcan
             @can('viewAny', \App\Models\User::class)
             <x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                 Usuarios

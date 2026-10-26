@@ -116,4 +116,33 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return ($request->expectsJson() ? response()->json(['message' => $message], 503) : response($message, 503))->header('Cache-Control', 'no-store, private');
         });
+        $esFalloSqlDisponibilidad = static function (Throwable $exception, Request $request): bool {
+            if (! $request->routeIs('disponibilidad.index', 'disponibilidad.store', 'disponibilidad.edit', 'disponibilidad.update')) {
+                return false;
+            }
+            do {
+                if ($exception instanceof QueryException) {
+                    return true;
+                }
+                $exception = $exception->getPrevious();
+            } while ($exception !== null);
+
+            return false;
+        };
+        $exceptions->report(function (Throwable $exception) use ($esFalloSqlDisponibilidad): ?bool {
+            if (! $esFalloSqlDisponibilidad($exception, request())) {
+                return null;
+            }
+            Log::error('Error de base de datos en disponibilidad médica.', ['modulo' => 'RF-060', 'operacion' => request()->route()->getName()]);
+
+            return false;
+        });
+        $exceptions->render(function (Throwable $exception, Request $request) use ($esFalloSqlDisponibilidad): ?Response {
+            if (! $esFalloSqlDisponibilidad($exception, $request)) {
+                return null;
+            }
+            $mensaje = 'No fue posible completar la operación de disponibilidad médica. Intente nuevamente.';
+
+            return ($request->expectsJson() ? response()->json(['message' => $mensaje], 503) : response($mensaje, 503))->header('Cache-Control', 'no-store, private');
+        });
     })->create();
