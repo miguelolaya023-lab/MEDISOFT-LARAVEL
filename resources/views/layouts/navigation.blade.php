@@ -13,6 +13,9 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         Panel
                     </x-nav-link>
+                    @can('create', \App\Models\Cita::class)
+                    <x-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.*')">Agendar particular</x-nav-link>
+                    @endcan
                     @can('viewAny', \App\Models\DisponibilidadMedica::class)
                     <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
                         Mi disponibilidad
@@ -124,6 +127,9 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 Panel
             </x-responsive-nav-link>
+            @can('create', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.*')">Agendar particular</x-responsive-nav-link>
+            @endcan
             @can('viewAny', \App\Models\DisponibilidadMedica::class)
             <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
                 Mi disponibilidad

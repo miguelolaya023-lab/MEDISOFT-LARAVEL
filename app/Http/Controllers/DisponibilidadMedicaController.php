@@ -44,10 +44,7 @@ class DisponibilidadMedicaController extends Controller
         return view('disponibilidad.edit', compact('disponibilidad'));
     }
 
-    /**
-     * CA-060-03 pendiente de Citas: RF-024/026 deben compartir el bloqueo Médico
-     * y la edición deberá comprobar sus intervalos no cancelados antes de guardar.
-     */
+    /** CA-060-03: todos los escritores de Citas deben compartir el mutex Médico. */
     public function update(SaveDisponibilidadRequest $request, DisponibilidadMedica $disponibilidad): RedirectResponse
     {
         DB::transaction(function () use ($request, $disponibilidad): void {
@@ -58,6 +55,13 @@ class DisponibilidadMedicaController extends Controller
             $data['hora_inicio'] .= ':00';
             $data['hora_fin'] .= ':00';
             $this->validateOverlap($medico, $data['fecha'], $data['hora_inicio'], $data['hora_fin'], $bloque->id);
+            $propuesta = new DisponibilidadMedica($data);
+            $intervalos = array_map(fn (array $intervalo) => ['inicio' => $intervalo['inicio'].':00', 'fin' => $intervalo['fin'].':00'], $propuesta->intervalos());
+            foreach ($bloque->citas()->ocupaHorario()->get(['fecha', 'hora_inicio', 'hora_fin']) as $cita) {
+                if ($cita->fecha->toDateString() !== $data['fecha'] || ! in_array(['inicio' => $cita->hora_inicio, 'fin' => $cita->hora_fin], $intervalos, true)) {
+                    throw ValidationException::withMessages(['hora_inicio' => 'La configuración debe conservar exactamente los intervalos de las citas no canceladas.']);
+                }
+            }
             $bloque->fill($data);
             if ($bloque->isDirty()) {
                 $bloque->save();

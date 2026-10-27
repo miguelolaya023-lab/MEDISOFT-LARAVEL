@@ -29,11 +29,13 @@ class AntecedenteClinicoController extends Controller
     public function store(SaveAntecedenteClinicoRequest $request, Paciente $paciente): RedirectResponse
     {
         DB::transaction(function () use ($request, $paciente): void {
+            $actor = $this->lockClinicalActor($request->user());
             $paciente = $this->lockActivePatient($paciente);
+            Gate::forUser($actor)->authorize('create', [AntecedenteClinico::class, $paciente]);
             $historia = $paciente->historiaClinica()->firstOrFail();
             $antecedente = $historia->antecedentes()->make($request->validated());
-            $antecedente->forceFill(['medico_id' => $request->user()->medico->getKey(), 'fecha_registro' => now()])->save();
-            $this->audit($request->user(), $antecedente, 'ANTECEDENTE_REGISTRADO');
+            $antecedente->forceFill(['medico_id' => $actor->medico->getKey(), 'fecha_registro' => now()])->save();
+            $this->audit($actor, $antecedente, 'ANTECEDENTE_REGISTRADO');
         });
 
         return redirect()->route('antecedentes.index', $paciente)->with('status', 'Antecedente clínico registrado correctamente.');
@@ -50,9 +52,10 @@ class AntecedenteClinicoController extends Controller
     public function update(SaveAntecedenteClinicoRequest $request, Paciente $paciente, int $antecedente): RedirectResponse
     {
         DB::transaction(function () use ($request, $paciente, $antecedente): void {
+            $actor = $this->lockClinicalActor($request->user());
             $paciente = $this->lockActivePatient($paciente);
             $antecedente = $paciente->historiaClinica()->firstOrFail()->antecedentes()->lockForUpdate()->findOrFail($antecedente);
-            Gate::authorize('update', $antecedente);
+            Gate::forUser($actor)->authorize('update', $antecedente);
             $antecedente->fill($request->validated());
             if (! $antecedente->isDirty(['descripcion', 'tipo'])) {
                 return;
@@ -60,12 +63,22 @@ class AntecedenteClinicoController extends Controller
             $revision = $antecedente->revisiones()->make([
                 'tipo' => $antecedente->getRawOriginal('tipo'), 'descripcion' => $antecedente->getRawOriginal('descripcion'),
             ]);
-            $revision->forceFill(['medico_id' => $request->user()->medico->getKey(), 'fecha_correccion' => now()])->save();
+            $revision->forceFill(['medico_id' => $actor->medico->getKey(), 'fecha_correccion' => now()])->save();
             $antecedente->save();
-            $this->audit($request->user(), $antecedente, 'ANTECEDENTE_CORREGIDO');
+            $this->audit($actor, $antecedente, 'ANTECEDENTE_CORREGIDO');
         });
 
         return redirect()->route('antecedentes.index', $paciente)->with('status', 'Antecedente clínico guardado correctamente.');
+    }
+
+    /**
+     * User S por PK antes de Paciente y de las FK Médico/User de escritura.
+     * Impide el ciclo con RF-060 (User X -> Médico X) sin bloquear en exclusiva
+     * al actor ni al autor histórico: las nuevas FK pertenecen al actor actual.
+     */
+    private function lockClinicalActor(User $user): User
+    {
+        return User::query()->sharedLock()->findOrFail($user->getKey());
     }
 
     /** Comparte el bloqueo de paciente con RF-012 para revalidar su estado. */

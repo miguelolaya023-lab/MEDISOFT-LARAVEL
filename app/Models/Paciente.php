@@ -37,6 +37,11 @@ class Paciente extends Model
         return $this->hasMany(RemisionEps::class, 'paciente_id');
     }
 
+    public function citas(): HasMany
+    {
+        return $this->hasMany(Cita::class);
+    }
+
     public function historiaClinica(): HasOne
     {
         return $this->hasOne(HistoriaClinica::class);

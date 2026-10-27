@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
 use App\Http\Controllers\PacienteController;
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/citas/particulares/create', [CitaParticularController::class, 'create'])->name('citas.create');
+    Route::post('/citas/particulares', [CitaParticularController::class, 'store'])->name('citas.store');
+    Route::get('/citas/{cita}/confirmacion', [CitaParticularController::class, 'confirmation'])->whereNumber('cita')->can('confirm', 'cita')->name('citas.confirmation');
     Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
     Route::post('/disponibilidad', [DisponibilidadMedicaController::class, 'store'])->name('disponibilidad.store');
     Route::get('/disponibilidad/{disponibilidad}/edit', [DisponibilidadMedicaController::class, 'edit'])->whereNumber('disponibilidad')->can('update', 'disponibilidad')->name('disponibilidad.edit');
