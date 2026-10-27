@@ -15,6 +15,12 @@
                 @php($etiqueta = $paciente->estado === 'ACTIVO' ? 'Inactivar paciente' : 'Reactivar paciente')
                 @if (in_array($paciente->estado, ['ACTIVO', 'INACTIVO'], true))
                     @can($accion, $paciente)
+                        @if ($accion === 'inactivate' && $citasProgramadas > 0)
+                            <div role="alert" class="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                                <p class="font-semibold">Advertencia: este paciente tiene {{ $citasProgramadas }} {{ $citasProgramadas === 1 ? 'cita PROGRAMADA' : 'citas PROGRAMADAS' }}.</p>
+                                <p>Puede continuar con la inactivación. Las citas se conservarán y no se cancelarán automáticamente. El paciente deberá estar activo para reprogramar o iniciar una atención.</p>
+                            </div>
+                        @endif
                         <form method="POST" action="{{ route('pacientes.'.$accion, $paciente) }}" class="space-y-4">
                             @csrf
                             @method('PATCH')

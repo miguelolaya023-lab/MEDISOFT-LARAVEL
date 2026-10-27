@@ -150,7 +150,7 @@ class DisponibilidadMedicaTest extends TestCase
         $this->assertSame($perfil, $actor->medico->refresh()->getAttributes());
         $this->assertSame($cuenta, $actor->refresh()->getAttributes());
         $this->assertDatabaseCount('pacientes', 0);
-        $this->assertFalse(Schema::hasTable('citas'));
+        $this->assertDatabaseCount('citas', 0);
         $audit = Auditoria::query()->sole();
         $this->assertSame('DISPONIBILIDAD_REGISTRADA', $audit->accion);
         $this->assertSame('DisponibilidadMedica', $audit->entidad);

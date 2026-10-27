@@ -6,15 +6,20 @@ use App\Http\Requests\ChangePacienteStateRequest;
 use App\Models\Auditoria;
 use App\Models\Paciente;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PacienteStateController extends Controller
 {
-    public function show(Paciente $paciente): View
+    public function show(Request $request, Paciente $paciente): View
     {
-        return view('pacientes.state', compact('paciente'));
+        $citasProgramadas = $paciente->estado === 'ACTIVO' && $request->user()->can('inactivate', $paciente)
+            ? $paciente->citas()->where('estado', 'PROGRAMADA')->count()
+            : 0;
+
+        return view('pacientes.state', compact('paciente', 'citasProgramadas'));
     }
 
     public function inactivate(ChangePacienteStateRequest $request, Paciente $paciente): RedirectResponse
@@ -29,7 +34,7 @@ class PacienteStateController extends Controller
 
     /**
      * RN-23: al incorporar AtencionMedica, comprobar EN_CURSO bajo este bloqueo
-     * antes de inactivar y avisar las citas PROGRAMADAS en la confirmación.
+     * antes de inactivar. La confirmación ya advierte las citas PROGRAMADAS.
      * RF-012.1: agenda e inicio de atención deberán bloquear la misma fila y
      * comprobar ACTIVO antes de escribir; cancelar conservará las citas.
      */

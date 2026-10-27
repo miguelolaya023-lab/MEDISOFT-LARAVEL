@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Auditoria;
+use App\Models\Cita;
 use App\Models\Paciente;
 use App\Models\Permiso;
 use App\Models\Rol;
 use App\Models\User;
 use Database\Seeders\PacientePermissionsSeeder;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +20,7 @@ use Tests\TestCase;
 
 /**
  * Estados administrativos: CA-009-03, parte de CA-012-01 y CA-012-04.
- * RF-012.1 y CA-012-02/03 requieren integrar citas y atenciones futuras.
+ * Aviso de citas PROGRAMADAS de RN-23; restricciones de atención pendientes.
  */
 class PacienteStateTest extends TestCase
 {
@@ -80,6 +82,85 @@ class PacienteStateTest extends TestCase
             ->assertDontSee('name="user_id"', false)->assertDontSee($paciente->telefono)
             ->assertDontSee($paciente->direccion)->assertDontSee('Reactivar paciente');
         $this->get(route('pacientes.show', $paciente))->assertSee('Inactivar paciente')->assertDontSee('Reactivar paciente');
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public static function cantidadesProgramadas(): array
+    {
+        return [[1], [3]];
+    }
+
+    #[DataProvider('cantidadesProgramadas')]
+    public function test_inactivation_warning_counts_only_this_patients_programmed_appointments(int $cantidad): void
+    {
+        $paciente = $this->paciente();
+        $citas = Cita::factory()->count($cantidad)->create(['paciente_id' => $paciente->id, 'motivo_consulta' => 'Motivo privado ficticio']);
+        Cita::factory()->create(['paciente_id' => $paciente->id, 'estado' => 'CANCELADA']);
+        Cita::factory()->count(2)->create(['paciente_id' => $this->paciente()->id]);
+        $this->actingAs($this->operador(['RF-012']))->get(route('pacientes.state', $paciente))->assertOk()
+            ->assertViewHas('citasProgramadas', $cantidad)
+            ->assertSee('Advertencia: este paciente tiene '.$cantidad.' '.($cantidad === 1 ? 'cita PROGRAMADA' : 'citas PROGRAMADAS').'.')
+            ->assertSee('Puede continuar con la inactivación.')->assertSee('no se cancelarán automáticamente')
+            ->assertSee('name="confirmacion"', false)->assertDontSee('Motivo privado ficticio')
+            ->assertDontSee($citas->first()->medico->registro_profesional);
+        $this->assertSame('ACTIVO', $paciente->refresh()->estado);
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public static function citasSinAviso(): array
+    {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('citasSinAviso')]
+    public function test_no_warning_without_programmed_appointments_even_if_other_patients_have_them(bool $cancelada): void
+    {
+        $paciente = $this->paciente();
+        if ($cancelada) {
+            Cita::factory()->create(['paciente_id' => $paciente->id, 'estado' => 'CANCELADA']);
+        }
+        Cita::factory()->create(['paciente_id' => $this->paciente()->id]);
+        $this->actingAs($this->operador(['RF-012']))->get(route('pacientes.state', $paciente))->assertOk()
+            ->assertViewHas('citasProgramadas', 0)->assertDontSee('Advertencia: este paciente tiene');
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_inactivation_after_warning_preserves_every_existing_appointment_and_history(): void
+    {
+        $paciente = $this->paciente();
+        $historia = $paciente->historiaClinica->getAttributes();
+        Cita::factory()->count(2)->create(['paciente_id' => $paciente->id]);
+        Cita::factory()->create(['paciente_id' => $paciente->id, 'estado' => 'CANCELADA']);
+        $antes = Cita::query()->orderBy('id')->get()->map->getAttributes()->all();
+        $this->actingAs($this->operador(['RF-012']))->get(route('pacientes.state', $paciente))->assertOk()->assertViewHas('citasProgramadas', 2);
+        $this->patch(route('pacientes.inactivate', $paciente), $this->datos())->assertSessionHasNoErrors();
+        $this->assertSame('INACTIVO', $paciente->refresh()->estado);
+        $this->assertSame($historia, $paciente->historiaClinica->getAttributes());
+        $this->assertSame($antes, Cita::query()->orderBy('id')->get()->map->getAttributes()->all());
+        $this->assertSame('PACIENTE_INACTIVADO', Auditoria::query()->sole()->accion);
+    }
+
+    public function test_warning_is_not_queried_or_exposed_without_inactivation_permission_or_when_reactivating(): void
+    {
+        $paciente = $this->paciente();
+        $inactivo = $this->paciente('INACTIVO');
+        Cita::factory()->create(['paciente_id' => $paciente->id, 'motivo_consulta' => 'Motivo privado ficticio']);
+        Cita::factory()->create(['paciente_id' => $inactivo->id]);
+        $lectura = $this->operador(['RF-010']);
+        $reactivacion = $this->operador(['RF-009']);
+        $consultasCitas = [];
+        DB::listen(static function (QueryExecuted $query) use (&$consultasCitas): void {
+            if (str_contains(strtolower($query->sql), 'from "citas"')) {
+                $consultasCitas[] = $query->sql;
+            }
+        });
+        $this->actingAs($lectura)->get(route('pacientes.state', $paciente))->assertForbidden()
+            ->assertDontSee('Advertencia: este paciente tiene')->assertDontSee('Motivo privado ficticio');
+        $this->actingAs($reactivacion)->get(route('pacientes.state', $paciente))->assertOk()
+            ->assertViewHas('citasProgramadas', 0)->assertDontSee('Advertencia: este paciente tiene');
+        $this->get(route('pacientes.state', $inactivo))->assertOk()
+            ->assertViewHas('citasProgramadas', 0)->assertDontSee('Advertencia: este paciente tiene');
+        $this->assertSame([], $consultasCitas);
         $this->assertDatabaseCount('auditorias', 0);
     }
 

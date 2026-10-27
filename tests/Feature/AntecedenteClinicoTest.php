@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\SaveAntecedenteClinicoRequest;
 use App\Models\AntecedenteClinico;
 use App\Models\Auditoria;
 use App\Models\Paciente;
@@ -11,7 +12,11 @@ use App\Models\Rol;
 use App\Models\User;
 use Database\Seeders\AntecedentePermissionsSeeder;
 use Database\Seeders\PacientePermissionsSeeder;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Grammars\SQLiteGrammar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use LogicException;
@@ -102,7 +107,7 @@ class AntecedenteClinicoTest extends TestCase
         $this->assertDatabaseCount('historias_clinicas', 1);
         $this->assertDatabaseCount('users', $cuentas);
         $this->assertFalse(Schema::hasColumn('pacientes', 'user_id'));
-        $this->assertFalse(Schema::hasTable('citas'));
+        $this->assertDatabaseCount('citas', 0);
         $this->assertDatabaseCount('antecedente_clinico_revisiones', 0);
         $audit = Auditoria::query()->sole();
         $this->assertSame('ANTECEDENTE_REGISTRADO', $audit->accion);
@@ -231,6 +236,96 @@ class AntecedenteClinicoTest extends TestCase
     public static function operaciones(): array
     {
         return [['store'], ['update']];
+    }
+
+    /** SQLite comprueba intención y orden; no demuestra bloqueos reales de InnoDB. */
+    #[DataProvider('operaciones')]
+    public function test_actor_shared_primary_key_lock_precedes_patient_and_clinical_writes(string $operacion): void
+    {
+        $paciente = $this->paciente();
+        $registro = $this->antecedente($paciente);
+        $actor = $this->medico();
+        $this->assertNotSame($registro->medico_id, $actor->medico->id);
+        $this->actingAs($actor);
+        $db = DB::connection();
+        $original = $db->getQueryGrammar();
+        $nivelExterior = $db->transactionLevel();
+        $consultas = [];
+        $db->setQueryGrammar(new class($db) extends SQLiteGrammar
+        {
+            protected function compileLock(Builder $query, mixed $value): string
+            {
+                return $value === true ? '/* RF058_FOR_UPDATE_REQUESTED */' : '/* RF058_SHARED_LOCK_REQUESTED */';
+            }
+        });
+        DB::listen(static function (QueryExecuted $query) use ($db, $nivelExterior, &$consultas): void {
+            if ($db->transactionLevel() > $nivelExterior) {
+                $consultas[] = ['sql' => strtolower($query->sql), 'bindings' => $query->bindings];
+            }
+        });
+        try {
+            $this->call($operacion === 'store' ? 'POST' : 'PUT', $this->url($operacion, $paciente, $operacion === 'update' ? $registro : null), $this->datos())
+                ->assertRedirect($this->url('index', $paciente))->assertSessionHasNoErrors();
+        } finally {
+            $db->setQueryGrammar($original);
+        }
+
+        $this->assertStringContainsString('from "users" where "users"."id" = ?', $consultas[0]['sql']);
+        $this->assertStringContainsString('rf058_shared_lock_requested', $consultas[0]['sql']);
+        $this->assertSame([$actor->id], $consultas[0]['bindings']);
+        $this->assertStringContainsString('from "pacientes"', $consultas[1]['sql']);
+        $this->assertStringContainsString('rf058_for_update_requested', $consultas[1]['sql']);
+        $this->assertSame([$paciente->id], $consultas[1]['bindings']);
+        $cuentas = array_values(array_filter($consultas, static fn (array $query): bool => str_contains($query['sql'], 'from "users"')));
+        $this->assertCount(1, $cuentas);
+        $this->assertSame($nivelExterior, $db->transactionLevel());
+        $this->assertSame($actor->id, Auditoria::query()->sole()->user_id);
+        if ($operacion === 'store') {
+            $this->assertSame($actor->medico->id, AntecedenteClinico::query()->latest('id')->firstOrFail()->medico_id);
+        } else {
+            $this->assertSame($actor->medico->id, $registro->revisiones()->sole()->medico_id);
+        }
+    }
+
+    public static function revocacionesClinicas(): array
+    {
+        $casos = [];
+        foreach (['store', 'update'] as $operacion) {
+            foreach (['cuenta', 'permiso', 'perfil', 'rol'] as $caso) {
+                $casos[$operacion.'-'.$caso] = [$operacion, $caso];
+            }
+        }
+
+        return $casos;
+    }
+
+    #[DataProvider('revocacionesClinicas')]
+    public function test_fresh_locked_actor_is_reauthorized_after_request_validation(string $operacion, string $caso): void
+    {
+        $paciente = $this->paciente();
+        $registro = $this->antecedente($paciente);
+        $antes = $registro->getAttributes();
+        $actor = $this->medico();
+        $actor->load('medico');
+        $sinPermisos = Rol::query()->create(['nombre' => 'Revocado ficticio']);
+        $this->actingAs($actor);
+        $cambiado = false;
+        $this->app->afterResolving(SaveAntecedenteClinicoRequest::class, static function () use ($actor, $caso, $sinPermisos, &$cambiado): void {
+            $cambiado = true;
+            match ($caso) {
+                'cuenta' => User::query()->whereKey($actor->id)->update(['estado' => 'inactivo']),
+                'permiso' => $actor->rol->permisos()->detach(),
+                'perfil' => $actor->medico()->update(['especialidad' => '']),
+                'rol' => User::query()->whereKey($actor->id)->update(['rol_id' => $sinPermisos->id]),
+            };
+        });
+
+        $this->call($operacion === 'store' ? 'POST' : 'PUT', $this->url($operacion, $paciente, $operacion === 'update' ? $registro : null), $this->datos())->assertForbidden();
+        $this->assertTrue($cambiado);
+        $this->assertSame($antes, $registro->refresh()->getAttributes());
+        $this->assertDatabaseCount('antecedentes_clinicos', 1);
+        $this->assertDatabaseCount('antecedente_clinico_revisiones', 0);
+        $this->assertDatabaseCount('auditorias', 0);
     }
 
     #[DataProvider('operaciones')]
