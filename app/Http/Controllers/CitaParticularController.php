@@ -28,7 +28,7 @@ class CitaParticularController extends Controller
             if ($medico === null) {
                 throw ValidationException::withMessages(['medico_id' => 'Seleccione un médico con cuenta activa y perfil profesional completo.']);
             }
-            $intervalos = $this->intervalosLibres($medico, $seleccion['fecha']);
+            $intervalos = $medico->intervalosLibres($seleccion['fecha']);
         }
 
         return view('citas.particulares.create', [
@@ -72,7 +72,7 @@ class CitaParticularController extends Controller
                 if (! Cita::inicioEsFuturo($data['fecha'], $data['hora_inicio'])) {
                     throw ValidationException::withMessages(['hora_inicio' => 'El inicio debe ser posterior al momento actual de Colombia.']);
                 }
-                $intervalo = collect($this->intervalosLibres($medico, $data['fecha']))->firstWhere('inicio', $data['hora_inicio']);
+                $intervalo = collect($medico->intervalosLibres($data['fecha']))->firstWhere('inicio', $data['hora_inicio']);
                 if ($intervalo === null) {
                     throw ValidationException::withMessages(['hora_inicio' => 'El intervalo no está disponible. Seleccione un horario libre y completo.']);
                 }
@@ -104,30 +104,5 @@ class CitaParticularController extends Controller
     public function confirmation(Cita $cita): View
     {
         return view('citas.particulares.confirmation', ['cita' => $cita->load(['paciente', 'medico.user'])]);
-    }
-
-    /**
-     * RF-024/025/026/027: User(s) compartidos por ID -> Paciente compartido ->
-     * EPS compartida/Remisión exclusiva cuando se implementen -> Médico exclusivo
-     * -> bloque/Cita por PK si se modifican. No abrir snapshot antes del último
-     * mutex ni convertir User compartido en exclusivo. Nunca bloquear rangos.
-     * La vista previa no reserva; al escribir se llama bajo el mutex Médico.
-     *
-     * @return list<array{inicio: string, fin: string, bloque_id: int}>
-     */
-    private function intervalosLibres(Medico $medico, string $fecha): array
-    {
-        $bloques = $medico->disponibilidades()->whereDate('fecha', $fecha)->orderBy('hora_inicio')->get();
-        $ocupadas = $medico->citas()->ocupaHorario()->whereDate('fecha', $fecha)->get(['hora_inicio', 'hora_fin']);
-        $intervalos = [];
-        foreach ($bloques as $bloque) {
-            foreach ($bloque->intervalos() as $intervalo) {
-                if (Cita::inicioEsFuturo($fecha, $intervalo['inicio']) && ! $ocupadas->contains(fn (Cita $cita) => $cita->hora_inicio < $intervalo['fin'].':00' && $cita->hora_fin > $intervalo['inicio'].':00')) {
-                    $intervalos[] = [...$intervalo, 'bloque_id' => $bloque->id];
-                }
-            }
-        }
-
-        return $intervalos;
     }
 }

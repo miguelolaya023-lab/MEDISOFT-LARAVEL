@@ -9,6 +9,7 @@ use App\Models\Cita;
 use App\Models\DisponibilidadMedica;
 use App\Models\Paciente;
 use App\Models\Permiso;
+use App\Models\RemisionEps;
 use App\Models\Rol;
 use App\Models\User;
 use Database\Seeders\CitaPermissionsSeeder;
@@ -396,7 +397,11 @@ class CitaParticularTest extends TestCase
     public function test_confirmacion_rf024_no_anticipa_acceso_a_modalidad_eps(): void
     {
         $actor = $this->actor();
-        $cita = Cita::factory()->create(['created_by' => $actor->id, 'modalidad' => 'EPS', 'motivo_consulta' => 'MOTIVO_FICTICIO_OTRA_MODALIDAD']);
+        $remision = RemisionEps::factory()->create();
+        $cita = Cita::factory()->create([
+            'created_by' => $actor->id, 'modalidad' => 'EPS', 'motivo_consulta' => 'MOTIVO_FICTICIO_OTRA_MODALIDAD',
+            'remision_id' => $remision->id, 'paciente_id' => $remision->paciente_id, 'valor_base' => null,
+        ]);
         $this->actingAs($actor)->get(route('citas.confirmation', $cita))->assertForbidden()->assertDontSee('MOTIVO_FICTICIO_OTRA_MODALIDAD');
         $this->assertDatabaseCount('auditorias', 0);
     }

@@ -16,4 +16,14 @@ class CitaPolicy
     {
         return $this->create($user) && $cita->modalidad === 'PARTICULAR' && $cita->created_by === $user->id;
     }
+
+    public function createEps(User $user): bool
+    {
+        return $user->tienePermiso('RF-025');
+    }
+
+    public function confirmEps(User $user, Cita $cita): bool
+    {
+        return $this->createEps($user) && $cita->modalidad === 'EPS' && $cita->created_by === $user->id;
+    }
 }

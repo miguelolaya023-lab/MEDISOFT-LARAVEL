@@ -14,7 +14,10 @@
                         Panel
                     </x-nav-link>
                     @can('create', \App\Models\Cita::class)
-                    <x-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.*')">Agendar particular</x-nav-link>
+                    <x-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.create', 'citas.confirmation')">Agendar particular</x-nav-link>
+                    @endcan
+                    @can('createEps', \App\Models\Cita::class)
+                    <x-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-nav-link>
                     @endcan
                     @can('viewAny', \App\Models\DisponibilidadMedica::class)
                     <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
@@ -128,7 +131,10 @@
                 Panel
             </x-responsive-nav-link>
             @can('create', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.*')">Agendar particular</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.create', 'citas.confirmation')">Agendar particular</x-responsive-nav-link>
+            @endcan
+            @can('createEps', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-responsive-nav-link>
             @endcan
             @can('viewAny', \App\Models\DisponibilidadMedica::class)
             <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
