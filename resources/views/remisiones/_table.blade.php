@@ -1,4 +1,4 @@
-<p class="px-6 py-4 text-sm font-medium">Total de registros: {{ $remisiones->count() }}</p>
+<p class="px-6 py-4 text-sm font-medium">Total de registros: {{ $totalRemisiones ?? $remisiones->count() }}</p>
 <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">
     <thead class="bg-gray-50"><tr>@foreach (['Número', 'Paciente', 'EPS', 'Emisión', 'Vigencia hasta', 'Estado', 'Ficha'] as $columna)<th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ $columna }}</th>@endforeach</tr></thead>
     <tbody class="divide-y divide-gray-200">

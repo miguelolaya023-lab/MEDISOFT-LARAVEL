@@ -45,7 +45,8 @@ class UpdatePacienteRequest extends FormRequest
             'telefono' => ['required', 'string', 'max:30'],
             'correo_electronico' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
-            'ciudad' => ['required', 'string', 'max:100'],
+            'ciudad' => ['missing'],
+            ...GeographicSelection::rules($this->exists('departamento_codigo') || $this->exists('municipio_codigo'), $this->input('departamento_codigo')),
             'tipo_paciente' => ['required', Rule::in(['PARTICULAR', 'EPS'])],
         ];
     }
@@ -65,6 +66,9 @@ class UpdatePacienteRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'ciudad.missing' => 'La ciudad textual se conserva o se determina en el servidor; no envíe este campo.',
+            '*.exists' => 'Seleccione un departamento y municipio oficiales compatibles.',
+            '*.regex' => 'Seleccione un código geográfico válido.',
             '*.required' => 'El campo :attribute es obligatorio.',
             '*.string' => 'El campo :attribute debe ser texto.',
             '*.max' => 'El campo :attribute no puede superar :max caracteres.',
@@ -82,6 +86,7 @@ class UpdatePacienteRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'departamento_codigo' => 'departamento', 'municipio_codigo' => 'municipio',
             'tipo_documento' => 'tipo de documento', 'numero_documento' => 'número de documento',
             'fecha_nacimiento' => 'fecha de nacimiento', 'correo_electronico' => 'correo electrónico',
             'tipo_paciente' => 'preferencia del paciente', 'telefono' => 'teléfono', 'direccion' => 'dirección',

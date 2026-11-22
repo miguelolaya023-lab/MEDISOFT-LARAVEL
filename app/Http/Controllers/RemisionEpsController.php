@@ -10,7 +10,6 @@ use App\Models\CambioEstadoRemision;
 use App\Models\Eps;
 use App\Models\Paciente;
 use App\Models\RemisionEps;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -46,15 +45,17 @@ class RemisionEpsController extends Controller
     {
         $filters = $request->validated();
         $buscar = $filters['buscar'] ?? '';
-        $query = RemisionEps::query()->with(['paciente', 'eps']);
-        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar).'%';
-        $query->where(fn (Builder $q) => $q->whereRaw("LOWER(numero_remision) LIKE LOWER(?) ESCAPE '!'", [$pattern])
-            ->orWhereHas('paciente', fn (Builder $q) => $q->whereRaw("numero_documento LIKE ? ESCAPE '!'", [$pattern])));
+        $remisiones = collect();
         if (! empty($filters['eps_id'])) {
-            $query->where('eps_id', $filters['eps_id']);
+            $query = RemisionEps::query()->with(['paciente', 'eps'])->where('eps_id', $filters['eps_id']);
+            if ($buscar !== '') {
+                $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar).'%';
+                $query->whereRaw("LOWER(numero_remision) LIKE LOWER(?) ESCAPE '!'", [$pattern]);
+            }
+            $remisiones = $query->orderBy('id')->paginate(15)->withQueryString();
         }
 
-        return view('remisiones.search', ['remisiones' => $buscar === '' ? collect() : $query->orderBy('id')->get(), 'filtros' => $filters,
+        return view('remisiones.search', ['remisiones' => $remisiones, 'filtros' => $filters,
             'epsOptions' => Eps::query()->orderBy('id')->get(['id', 'nit', 'nombre']), 'puedeConsultar' => true]);
     }
 

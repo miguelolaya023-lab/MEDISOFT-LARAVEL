@@ -12,7 +12,7 @@
                         </select>
                     </div>
                     <div>
-                        <x-input-label for="ciudad" value="Ciudad" />
+                        <x-input-label for="ciudad" value="Municipio / ciudad histórica" />
                         <x-text-input id="ciudad" name="ciudad" :value="$filtros['ciudad'] ?? ''" maxlength="100" class="mt-1 block w-full" />
                     </div>
                     <div>

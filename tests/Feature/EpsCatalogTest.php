@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\SaveEpsRequest;
 use App\Models\Auditoria;
+use App\Models\Departamento;
 use App\Models\Eps;
+use App\Models\Municipio;
 use App\Models\Paciente;
 use App\Models\Permiso;
 use App\Models\Rol;
@@ -59,6 +62,13 @@ class EpsCatalogTest extends TestCase
         }
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Departamento::create(['codigo' => '76', 'nombre' => 'VALLE DEL CAUCA']);
+        Municipio::create(['codigo' => '76001', 'departamento_codigo' => '76', 'nombre' => 'SANTIAGO DE CALI', 'tipo_territorial' => 'Municipio']);
+    }
+
     protected function tearDown(): void
     {
         try {
@@ -85,13 +95,13 @@ class EpsCatalogTest extends TestCase
     {
         return ['nit' => '00DEMO.123-XY', 'nombre' => 'EPS ficticia del Valle', 'telefono' => '003001234567',
             'correo_electronico' => 'contacto@example.com', 'direccion' => 'Dirección ficticia',
-            'ciudad' => 'Cali', 'estado' => 'ACTIVA', ...$cambios];
+            'departamento_codigo' => '76', 'municipio_codigo' => '76001', 'estado' => 'ACTIVA', ...$cambios];
     }
 
     /** @return array<string, mixed> */
     private function editar(Eps $eps, array $cambios = []): array
     {
-        return [...$eps->only(['nit', 'nombre', 'telefono', 'correo_electronico', 'direccion', 'ciudad', 'estado']), ...$cambios];
+        return [...$eps->only(['nombre', 'telefono', 'correo_electronico', 'direccion', 'estado']), ...$cambios];
     }
 
     public static function estadosPermitidos(): array
@@ -109,7 +119,7 @@ class EpsCatalogTest extends TestCase
         $eps = Eps::query()->sole();
         $this->assertSame('00DEMO.123-XY', $eps->nit);
         $this->assertSame('003001234567', $eps->telefono);
-        $this->assertSame('Cali', $eps->ciudad);
+        $this->assertSame('SANTIAGO DE CALI', $eps->ciudad);
         $this->assertSame($estado, $eps->estado);
         $this->assertSame($antes, $actor->refresh()->getAttributes());
         $this->assertDatabaseCount('users', 1);
@@ -142,38 +152,93 @@ class EpsCatalogTest extends TestCase
         $this->assertDatabaseCount('auditorias', 0);
     }
 
-    public function test_edit_keeps_identity_created_date_and_other_domains_and_excludes_own_nit(): void
+    public function test_edit_without_nit_keeps_identity_nit_created_date_and_other_domains(): void
     {
         $actor = $this->operador();
         $eps = Eps::factory()->create(['created_at' => now()->subYear()])->refresh();
         $id = $eps->id;
+        $nit = $eps->nit;
         $creada = $eps->getRawOriginal('created_at');
+        $cityBefore = $eps->ciudad;
         $otra = Eps::factory()->create()->refresh();
         $otraAntes = $otra->getAttributes();
         $paciente = Paciente::factory()->create()->refresh();
         $historia = $paciente->historiaClinica()->create(['fecha_apertura' => now()])->refresh();
         $pacienteAntes = $paciente->getAttributes();
         $historiaAntes = $historia->getAttributes();
-        $this->actingAs($actor)->get(route('eps.edit', $eps))->assertOk()->assertSee($eps->nit);
-        $this->put(route('eps.update', $eps), $this->editar($eps, ['nombre' => 'Nombre corregido', 'ciudad' => 'Yumbo']))->assertSessionHasNoErrors();
+        $this->actingAs($actor)->get(route('eps.edit', $eps))->assertOk()->assertSee($eps->nit)->assertDontSee('name="nit"', false);
+        $this->put(route('eps.update', $eps), $this->editar($eps, ['nombre' => 'Nombre corregido', 'direccion' => 'Dirección QA actualizada']))->assertSessionHasNoErrors();
         $eps->refresh();
         $this->assertSame($id, $eps->id);
+        $this->assertSame($nit, $eps->nit);
         $this->assertSame($creada, $eps->getRawOriginal('created_at'));
-        $this->assertSame('Yumbo', $eps->ciudad);
+        $this->assertSame($cityBefore, $eps->ciudad);
         $this->assertSame($otraAntes, $otra->refresh()->getAttributes());
         $this->assertSame($pacienteAntes, $paciente->refresh()->getAttributes());
         $this->assertSame($historiaAntes, $historia->refresh()->getAttributes());
-        $this->get(route('eps.show', $eps))->assertSee('Nombre corregido')->assertSee('Yumbo');
+        $this->get(route('eps.show', $eps))->assertSee('Nombre corregido')->assertSee($cityBefore);
         $this->assertSame('EPS_ACTUALIZADA', Auditoria::query()->sole()->accion);
     }
 
-    public function test_nit_can_be_corrected_but_cannot_use_another_eps_nit_or_forged_ignore_id(): void
+    public static function injectedNits(): array
     {
-        $eps = Eps::factory()->create();
-        $otra = Eps::factory()->create();
-        $this->actingAs($this->operador())->put(route('eps.update', $eps), $this->editar($eps, ['nit' => $otra->nit, 'id' => $otra->id]))->assertInvalid(['nit', 'id']);
-        $this->put(route('eps.update', $eps), $this->editar($eps, ['nit' => '00NUEVO-DEMO']))->assertSessionHasNoErrors();
-        $this->assertSame('00NUEVO-DEMO', $eps->refresh()->nit);
+        $cases = [];
+        foreach (['PUT', 'PATCH'] as $method) {
+            foreach (['html', 'json'] as $format) {
+                foreach (['different', 'same', 'empty', 'null', 'array', 'empty-array', 'new-nit'] as $kind) {
+                    $cases[$method.'-'.$format.'-'.$kind] = [$method, $format, $kind];
+                }
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('injectedNits')]
+    public function test_update_rejects_any_present_nit_without_writes(string $method, string $format, string $kind): void
+    {
+        $eps = Eps::factory()->create()->refresh();
+        $other = Eps::factory()->create()->refresh();
+        $before = $eps->getAttributes();
+        $otherBefore = $other->getAttributes();
+        $value = match ($kind) {
+            'same' => $eps->nit,
+            'empty' => '',
+            'null' => null,
+            'array' => ['NIT-FICTICIO'],
+            'empty-array' => [],
+            'new-nit' => 'NIT-FICTICIO-NUEVO-'.uniqid(),
+            default => $other->nit,
+        };
+        if ($kind === 'new-nit') {
+            $this->assertDatabaseMissing('eps', ['nit' => $value]);
+        }
+        $this->actingAs($this->operador());
+        $data = $this->editar($eps, ['nit' => $value, 'nombre' => 'Cambio rechazado', 'estado' => 'INACTIVA', 'motivo' => 'Motivo ficticio']);
+        $response = $format === 'json'
+            ? $this->json($method, route('eps.update', $eps), $data)
+            : $this->call($method, route('eps.update', $eps), $data);
+        if ($format === 'json') {
+            $response->assertUnprocessable()->assertJsonValidationErrors(['nit'])->assertJsonCount(1, 'errors');
+        } else {
+            $response->assertUnprocessable()->assertSee('El NIT no se puede modificar ni enviar al actualizar una EPS.');
+            $this->assertSame(['nit'], $response->viewData('errors')->keys());
+        }
+        $this->assertSame($before, $eps->refresh()->getAttributes());
+        $this->assertSame($otherBefore, $other->refresh()->getAttributes());
+        $this->assertDatabaseCount('eps', 2);
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_update_rejects_forged_identity_and_nit(): void
+    {
+        $eps = Eps::factory()->create()->refresh();
+        $other = Eps::factory()->create();
+        $before = $eps->getAttributes();
+        $this->actingAs($this->operador())->putJson(route('eps.update', $eps), $this->editar($eps, ['nit' => $other->nit, 'id' => $other->id]))
+            ->assertUnprocessable()->assertJsonValidationErrors(['nit', 'id']);
+        $this->assertSame($before, $eps->refresh()->getAttributes());
+        $this->assertDatabaseCount('auditorias', 0);
     }
 
     public function test_state_changes_require_reason_in_both_directions_and_preserve_each_transition_in_audit(): void
@@ -200,11 +265,9 @@ class EpsCatalogTest extends TestCase
         $eps = Eps::factory()->create(['estado' => 'ACTIVA']);
         $this->actingAs($this->operador());
         $inyectado = false;
-        DB::listen(function (QueryExecuted $query) use ($eps, &$inyectado): void {
-            if (! $inyectado && str_contains($query->sql, 'count(') && str_contains($query->sql, '"eps"')) {
-                $inyectado = true;
-                Eps::query()->whereKey($eps->id)->update(['estado' => 'INACTIVA']);
-            }
+        $this->app->afterResolving(SaveEpsRequest::class, function () use ($eps, &$inyectado): void {
+            $inyectado = true;
+            Eps::query()->whereKey($eps->id)->update(['estado' => 'INACTIVA']);
         });
         $this->put(route('eps.update', $eps), $this->editar($eps))->assertInvalid('motivo');
         $this->assertTrue($inyectado);
@@ -332,7 +395,7 @@ class EpsCatalogTest extends TestCase
         $this->get(route('eps.show', $eps))->assertForbidden();
         $this->get(route('eps.index'))->assertForbidden();
         $this->get(route('eps.edit', $eps))->assertForbidden();
-        $this->actingAs($this->operador(['RF-016']))->put(route('eps.update', $eps), $this->editar($eps, ['ciudad' => 'Palmira']))->assertSessionHasNoErrors()->assertRedirect(route('eps.edit', $eps));
+        $this->actingAs($this->operador(['RF-016']))->put(route('eps.update', $eps), $this->editar($eps, ['direccion' => 'Dirección QA actualizada']))->assertSessionHasNoErrors()->assertRedirect(route('eps.edit', $eps));
         $this->get(route('eps.edit', $eps))->assertOk();
         $this->get(route('eps.show', $eps))->assertForbidden();
         $this->get(route('eps.create'))->assertForbidden();
@@ -380,7 +443,7 @@ class EpsCatalogTest extends TestCase
 
     public static function obligatorios(): array
     {
-        return array_map(fn (string $campo): array => [$campo], ['nit', 'nombre', 'telefono', 'correo_electronico', 'direccion', 'ciudad', 'estado']);
+        return array_map(fn (string $campo): array => [$campo], ['nit', 'nombre', 'telefono', 'correo_electronico', 'direccion', 'estado']);
     }
 
     #[DataProvider('obligatorios')]
@@ -392,9 +455,11 @@ class EpsCatalogTest extends TestCase
         $alta = $this->datos();
         unset($alta[$campo]);
         $this->post(route('eps.store'), $alta)->assertInvalid($campo);
-        $cambio = $this->editar($eps);
-        unset($cambio[$campo]);
-        $this->put(route('eps.update', $eps), $cambio)->assertInvalid($campo);
+        if ($campo !== 'nit') {
+            $cambio = $this->editar($eps);
+            unset($cambio[$campo]);
+            $this->put(route('eps.update', $eps), $cambio)->assertInvalid($campo);
+        }
         $this->assertSame($antes, $eps->refresh()->getAttributes());
         $this->assertDatabaseCount('eps', 1);
         $this->assertDatabaseCount('auditorias', 0);
@@ -411,7 +476,7 @@ class EpsCatalogTest extends TestCase
         $eps = Eps::factory()->create()->refresh();
         $antes = $eps->getAttributes();
         $this->actingAs($this->operador())->post(route('eps.store'), $this->datos([$campo => $valor]))->assertInvalid($campo);
-        $this->put(route('eps.update', $eps), $this->editar($eps, [$campo => $valor]))->assertInvalid($campo);
+        $this->putJson(route('eps.update', $eps), $this->editar($eps, [$campo => $valor]))->assertInvalid($campo);
         $this->assertSame($antes, $eps->refresh()->getAttributes());
         $this->assertDatabaseCount('auditorias', 0);
     }
@@ -427,7 +492,7 @@ class EpsCatalogTest extends TestCase
         $eps = Eps::factory()->create()->refresh();
         $antes = $eps->getAttributes();
         $this->actingAs($this->operador())->post(route('eps.store'), $this->datos([$campo => $valor]))->assertInvalid($campo);
-        $this->put(route('eps.update', $eps), $this->editar($eps, [$campo => $valor]))->assertInvalid($campo);
+        $this->putJson(route('eps.update', $eps), $this->editar($eps, [$campo => $valor]))->assertInvalid($campo);
         $this->assertSame($antes, $eps->refresh()->getAttributes());
         $this->assertDatabaseCount('eps', 1);
         $this->assertDatabaseCount('auditorias', 0);
@@ -473,7 +538,7 @@ class EpsCatalogTest extends TestCase
             throw new RuntimeException('Fallo ficticio de auditoría EPS');
         });
         try {
-            $datos = $this->datos(['estado' => 'INACTIVA', ...($operacion === 'update' ? ['motivo' => 'Cambio ficticio'] : [])]);
+            $datos = $operacion === 'update' ? $this->editar($eps, ['estado' => 'INACTIVA', 'motivo' => 'Cambio ficticio']) : $this->datos(['estado' => 'INACTIVA']);
             $this->call($operacion === 'store' ? 'POST' : 'PUT', $operacion === 'store' ? route('eps.store') : route('eps.update', $eps), $datos);
             $this->fail('Se esperaba error de auditoría.');
         } catch (RuntimeException $e) {
@@ -588,7 +653,7 @@ class EpsCatalogTest extends TestCase
         $route = $creating ? 'eps.store' : 'eps.update';
         $method = $creating ? 'POST' : 'PUT';
         $url = route($route, $creating ? [] : ['eps' => $eps]);
-        $data = $creating ? $this->datos() : $this->editar($eps, ['ciudad' => 'Yumbo', 'estado' => 'INACTIVA', 'motivo' => 'Cambio administrativo ficticio']);
+        $data = $creating ? $this->datos() : $this->editar($eps, ['direccion' => 'Dirección QA actualizada', 'estado' => 'INACTIVA', 'motivo' => 'Cambio administrativo ficticio']);
         try {
             $response = $json ? $this->json($method, $url, $data) : $this->call($method, $url, $data);
             $this->assertSafeSqlFailure($response, $route, $json);
@@ -683,7 +748,7 @@ class EpsCatalogTest extends TestCase
         }
         $url = route('eps.'.$action, $creating ? [] : ['eps' => $eps]);
         $method = $creating ? 'POST' : 'PUT';
-        $data = $creating ? $this->datos() : $this->editar($eps, ['ciudad' => 'Yumbo']);
+        $data = $creating ? $this->datos() : $this->editar($eps, ['direccion' => 'Dirección QA actualizada']);
         try {
             $response = $json ? $this->json($method, $url, $data) : $this->call($method, $url, $data);
             $response->assertStatus(500);
@@ -741,7 +806,7 @@ class EpsCatalogTest extends TestCase
             $this->assertNull($actor->medico);
             $this->actingAs($actor)->post(route('eps.store'), $this->datos(['nit' => 'DEMO-'.$actor->id]))->assertSessionHasNoErrors();
             $eps = Eps::query()->latest('id')->first();
-            $this->put(route('eps.update', $eps), $this->editar($eps, ['ciudad' => 'Yumbo']))->assertSessionHasNoErrors();
+            $this->put(route('eps.update', $eps), $this->editar($eps, ['direccion' => 'Dirección QA actualizada']))->assertSessionHasNoErrors();
             $this->get(route('eps.show', $eps))->assertOk();
             $this->get(route('eps.index'))->assertOk();
             $this->get(route('eps.search'))->assertOk();

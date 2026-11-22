@@ -194,12 +194,52 @@ class RemisionErrorTest extends TestCase
                 throw self::sqlFailure();
             }
         });
-        $url = route('remisiones.'.$action, in_array($action, ['show', 'edit', 'state'], true) ? ['remision' => $this->remision] : ($action === 'search' ? ['buscar' => 'FICTICIO'] : []));
+        $url = route('remisiones.'.$action, in_array($action, ['show', 'edit', 'state'], true) ? ['remision' => $this->remision] : ($action === 'search' ? ['eps_id' => $this->remision->eps_id, 'buscar' => 'FICTICIO'] : []));
         $response = $json ? $this->getJson($url) : $this->get($url);
         $this->assertTrue($injected);
         $this->assertSafeFailure($response, 'remisiones.'.$action, $json);
         $this->assertSame($before, $this->remision->refresh()->getAttributes());
         $this->assertSame($audits, Auditoria::query()->get()->toArray());
+    }
+
+    public static function searchSqlStages(): array
+    {
+        $cases = [];
+        foreach (['count', 'relation'] as $stage) {
+            foreach ([false, true] as $json) {
+                foreach ([false, true] as $debug) {
+                    $cases[$stage.'-json-'.(int) $json.'-debug-'.(int) $debug] = [$stage, $json, $debug];
+                }
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('searchSqlStages')]
+    public function test_search_sql_failures_are_safe_at_query_and_relation_stages(string $stage, bool $json, bool $debug): void
+    {
+        config(['app.debug' => $debug]);
+        $before = $this->remision->getAttributes();
+        $audits = Auditoria::query()->get()->toArray();
+        $injected = false;
+        DB::connection()->beforeExecuting(static function (string $sql) use ($stage, &$injected): void {
+            $sql = strtolower($sql);
+            $target = $stage === 'count'
+                ? str_contains($sql, 'count(') && str_contains($sql, 'from "remisiones_eps"')
+                : str_contains($sql, 'select') && str_contains($sql, 'from "pacientes"');
+            if (! $injected && $target) {
+                $injected = true;
+                throw self::sqlFailure();
+            }
+        });
+        $url = route('remisiones.search', ['eps_id' => $this->remision->eps_id]);
+        $response = $json ? $this->getJson($url) : $this->get($url);
+        $this->assertTrue($injected, 'No se alcanzó la consulta objetivo.');
+        $this->assertSafeFailure($response, 'remisiones.search', $json);
+        $this->assertSame($before, $this->remision->refresh()->getAttributes());
+        $this->assertSame($audits, Auditoria::query()->get()->toArray());
+        $this->assertDatabaseCount('cambios_estado_remision', 0);
     }
 
     public static function views(): array

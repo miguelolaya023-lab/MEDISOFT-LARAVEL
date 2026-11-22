@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Http\Requests\StorePacienteRequest;
 use App\Models\Auditoria;
+use App\Models\Departamento;
 use App\Models\HistoriaClinica;
+use App\Models\Municipio;
 use App\Models\Paciente;
 use App\Models\Permiso;
 use App\Models\Rol;
@@ -23,6 +25,13 @@ class PacienteManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Departamento::create(['codigo' => '76', 'nombre' => 'VALLE DEL CAUCA']);
+        Municipio::create(['codigo' => '76001', 'departamento_codigo' => '76', 'nombre' => 'SANTIAGO DE CALI', 'tipo_territorial' => 'Municipio']);
+    }
+
     private function autorizado(array $permisos = ['RF-008', 'RF-010', 'RF-011']): User
     {
         $this->seed(PacientePermissionsSeeder::class);
@@ -39,7 +48,7 @@ class PacienteManagementTest extends TestCase
             'tipo_documento' => 'CC', 'numero_documento' => '0012345678',
             'nombres' => 'Ana Maria', 'apellidos' => 'Gomez Rios',
             'fecha_nacimiento' => '1996-05-20', 'sexo' => 'FEMENINO', 'telefono' => '003001234567',
-            'direccion' => 'Calle 10 # 20-30', 'ciudad' => 'Cali', 'tipo_paciente' => 'PARTICULAR',
+            'direccion' => 'Calle 10 # 20-30', 'departamento_codigo' => '76', 'municipio_codigo' => '76001', 'tipo_paciente' => 'PARTICULAR',
         ];
     }
 
@@ -134,7 +143,7 @@ class PacienteManagementTest extends TestCase
 
     public static function requiredFields(): array
     {
-        return array_map(fn (string $campo): array => [$campo], ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'direccion', 'ciudad', 'tipo_paciente']);
+        return array_map(fn (string $campo): array => [$campo], ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'direccion', 'departamento_codigo', 'municipio_codigo', 'tipo_paciente']);
     }
 
     public static function validDocumentTypes(): array

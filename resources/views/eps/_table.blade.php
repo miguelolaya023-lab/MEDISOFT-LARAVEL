@@ -2,12 +2,12 @@
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50"><tr>
-            @foreach (['NIT', 'Nombre', 'Ciudad', 'Estado', 'Ficha'] as $columna)<th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">{{ $columna }}</th>@endforeach
+            @foreach (['NIT', 'Nombre', 'Ubicación vigente', 'Estado', 'Ficha'] as $columna)<th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">{{ $columna }}</th>@endforeach
         </tr></thead>
         <tbody class="divide-y divide-gray-200 bg-white">
             @forelse ($entidades as $entidad)
                 <tr>
-                    @foreach (['nit', 'nombre', 'ciudad', 'estado'] as $campo)<td class="px-6 py-4 text-sm text-gray-700">{{ $entidad->$campo }}</td>@endforeach
+                    @foreach (['nit', 'nombre', 'ciudad', 'estado'] as $campo)<td class="px-6 py-4 text-sm text-gray-700">@if ($campo === 'ciudad')<x-location-display :registro="$entidad" />@else{{ $entidad->$campo }}@endif</td>@endforeach
                     <td class="px-6 py-4 text-sm">@if ($puedeConsultar)<a href="{{ route('eps.show', $entidad) }}" class="text-teal-700 underline">Ver ficha</a>@endif</td>
                 </tr>
             @empty

@@ -62,7 +62,7 @@ class PacienteUpdateTest extends TestCase
             'nombres' => $paciente->nombres, 'apellidos' => $paciente->apellidos,
             'fecha_nacimiento' => $paciente->fecha_nacimiento->format('Y-m-d'), 'sexo' => $paciente->sexo,
             'telefono' => $paciente->telefono, 'correo_electronico' => $paciente->correo_electronico,
-            'direccion' => $paciente->direccion, 'ciudad' => $paciente->ciudad,
+            'direccion' => $paciente->direccion,
             'tipo_paciente' => $paciente->tipo_paciente, ...$cambios,
         ];
     }
@@ -88,10 +88,11 @@ class PacienteUpdateTest extends TestCase
         $user = $this->editor();
         $userData = $user->getAttributes();
         $id = $paciente->id;
+        $city = $paciente->ciudad;
         $this->actingAs($user)->put(route('pacientes.update', $paciente), $this->datos($paciente, [
             'tipo_documento' => 'PT', 'numero_documento' => '0000123456', 'nombres' => 'Ana Maria', 'apellidos' => 'Prueba',
             'fecha_nacimiento' => '2000-01-02', 'sexo' => 'NO_ESPECIFICA', 'telefono' => '003001234567',
-            'correo_electronico' => 'ANA.PRUEBA@example.com', 'direccion' => 'Dirección de prueba', 'ciudad' => 'Yumbo', 'tipo_paciente' => 'EPS',
+            'correo_electronico' => 'ANA.PRUEBA@example.com', 'direccion' => 'Dirección de prueba', 'tipo_paciente' => 'EPS',
         ]))->assertSessionHasNoErrors()->assertRedirect(route('pacientes.show', $paciente));
         $paciente->refresh();
         $this->assertSame($id, $paciente->id);
@@ -101,7 +102,7 @@ class PacienteUpdateTest extends TestCase
         $this->assertSame('ana.prueba@example.com', $paciente->correo_electronico);
         $this->assertSame('EPS', $paciente->tipo_paciente);
         $this->assertSame('NO_ESPECIFICA', $paciente->sexo);
-        $this->assertSame('Yumbo', $paciente->ciudad);
+        $this->assertSame($city, $paciente->ciudad);
         $this->assertSame($historia, $paciente->historiaClinica->getAttributes());
         $this->assertSame($otherData, $other->refresh()->getAttributes());
         $this->assertSame($userData, $user->refresh()->getAttributes());
@@ -163,7 +164,7 @@ class PacienteUpdateTest extends TestCase
     {
         $paciente = $this->paciente();
         $this->actingAs($this->editor(['RF-009']))->get(route('pacientes.edit', $paciente))->assertOk();
-        $this->put(route('pacientes.update', $paciente), $this->datos($paciente, ['ciudad' => 'Palmira']))
+        $this->put(route('pacientes.update', $paciente), $this->datos($paciente, ['direccion' => 'Palmira']))
             ->assertSessionHasNoErrors()->assertRedirect(route('pacientes.edit', $paciente))->assertSessionHas('status');
         $this->get(route('pacientes.show', $paciente))->assertForbidden();
         $this->get(route('pacientes.create'))->assertForbidden();
@@ -196,7 +197,7 @@ class PacienteUpdateTest extends TestCase
         $user->update(['estado' => 'inactivo']);
         $this->actingAs($user)->get(route('pacientes.edit', $paciente))->assertRedirect('/login');
         $this->assertGuest();
-        $this->actingAs($user)->put(route('pacientes.update', $paciente), $this->datos($paciente, ['ciudad' => 'Cambio']))->assertRedirect('/login');
+        $this->actingAs($user)->put(route('pacientes.update', $paciente), $this->datos($paciente, ['direccion' => 'Cambio']))->assertRedirect('/login');
         $this->assertSame($before, $paciente->refresh()->getAttributes());
         $this->assertDatabaseCount('auditorias', 0);
     }
@@ -206,15 +207,15 @@ class PacienteUpdateTest extends TestCase
         $paciente = $this->paciente();
         $paciente->forceFill(['estado' => 'INACTIVO'])->save();
         $historia = $paciente->historiaClinica->getAttributes();
-        $this->actingAs($this->editor())->put(route('pacientes.update', $paciente), $this->datos($paciente, ['ciudad' => 'Palmira']))->assertSessionHasNoErrors();
+        $this->actingAs($this->editor())->put(route('pacientes.update', $paciente), $this->datos($paciente, ['direccion' => 'Palmira']))->assertSessionHasNoErrors();
         $this->assertSame('INACTIVO', $paciente->refresh()->estado);
-        $this->assertSame('Palmira', $paciente->ciudad);
+        $this->assertSame('Palmira', $paciente->direccion);
         $this->assertSame($historia, $paciente->historiaClinica->getAttributes());
     }
 
     public static function requiredFields(): array
     {
-        return array_map(fn (string $campo): array => [$campo], ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'direccion', 'ciudad', 'tipo_paciente']);
+        return array_map(fn (string $campo): array => [$campo], ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'direccion', 'tipo_paciente']);
     }
 
     #[DataProvider('requiredFields')]
@@ -321,7 +322,7 @@ class PacienteUpdateTest extends TestCase
             throw new RuntimeException('Fallo de auditoría simulado');
         });
         try {
-            $this->put(route('pacientes.update', $paciente), $this->datos($paciente, ['ciudad' => 'Cambio', 'tipo_paciente' => 'EPS']));
+            $this->put(route('pacientes.update', $paciente), $this->datos($paciente, ['direccion' => 'Cambio', 'tipo_paciente' => 'EPS']));
             $this->fail('Se esperaba fallo de auditoría.');
         } catch (RuntimeException $exception) {
             $this->assertSame('Fallo de auditoría simulado', $exception->getMessage());

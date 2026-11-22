@@ -7,6 +7,8 @@ use App\Http\Requests\SearchPacienteRequest;
 use App\Http\Requests\StorePacienteRequest;
 use App\Http\Requests\UpdatePacienteRequest;
 use App\Models\Auditoria;
+use App\Models\Departamento;
+use App\Models\Municipio;
 use App\Models\Paciente;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -20,11 +22,11 @@ class PacienteController extends Controller
     public function index(ListPacienteRequest $request): View
     {
         $filtros = $request->validated();
-        $query = Paciente::query();
+        $query = Paciente::query()->with(['municipio', 'departamento']);
         foreach (['tipo_paciente', 'ciudad', 'estado'] as $campo) {
             if (isset($filtros[$campo]) && $filtros[$campo] !== '') {
                 if ($campo === 'ciudad') {
-                    $query->whereLike($campo, '%'.$filtros[$campo].'%', caseSensitive: false);
+                    $query->atLocation($filtros[$campo]);
                 } else {
                     $query->where($campo, $filtros[$campo]);
                 }
@@ -40,7 +42,7 @@ class PacienteController extends Controller
     public function search(SearchPacienteRequest $request): View
     {
         $buscar = trim((string) ($request->validated('buscar') ?? ''));
-        $pacientes = $buscar === '' ? collect() : Paciente::query()->where(function (Builder $query) use ($buscar): void {
+        $pacientes = $buscar === '' ? collect() : Paciente::query()->with(['municipio', 'departamento'])->where(function (Builder $query) use ($buscar): void {
             $query->where('numero_documento', 'like', '%'.$buscar.'%')
                 ->orWhere(function (Builder $query) use ($buscar): void {
                     foreach (preg_split('/\s+/u', $buscar) as $palabra) {
@@ -56,14 +58,14 @@ class PacienteController extends Controller
 
     public function create(): View
     {
-        return view('pacientes.create');
+        return view('pacientes.create', $this->geographicOptions());
     }
 
     public function store(StorePacienteRequest $request): RedirectResponse
     {
         try {
             $paciente = DB::transaction(function () use ($request): Paciente {
-                $paciente = Paciente::query()->create($request->validated());
+                $paciente = Paciente::query()->create([...$request->validated(), 'ciudad' => Municipio::query()->where('codigo', $request->validated('municipio_codigo'))->where('departamento_codigo', $request->validated('departamento_codigo'))->firstOrFail()->nombre]);
                 $paciente->historiaClinica()->create(['fecha_apertura' => now()]);
                 Auditoria::query()->create([
                     'user_id' => $request->user()->getKey(), 'accion' => 'PACIENTE_CREADO',
@@ -87,12 +89,14 @@ class PacienteController extends Controller
 
     public function show(Paciente $paciente): View
     {
+        $paciente->load(['municipio', 'departamento']);
+
         return view('pacientes.show', compact('paciente'));
     }
 
     public function edit(Paciente $paciente): View
     {
-        return view('pacientes.edit', compact('paciente'));
+        return view('pacientes.edit', ['paciente' => $paciente, ...$this->geographicOptions()]);
     }
 
     public function update(UpdatePacienteRequest $request, Paciente $paciente): RedirectResponse
@@ -119,5 +123,14 @@ class PacienteController extends Controller
         $destino = $request->user()->can('view', $paciente) ? route('pacientes.show', $paciente) : route('pacientes.edit', $paciente);
 
         return redirect($destino)->with('status', 'Datos administrativos del paciente actualizados correctamente.');
+    }
+
+    /** @return array<string, mixed> */
+    private function geographicOptions(): array
+    {
+        return [
+            'departamentos' => Departamento::query()->orderBy('nombre')->orderBy('codigo')->get(['codigo', 'nombre']),
+            'municipios' => Municipio::query()->orderBy('nombre')->orderBy('codigo')->get(['codigo', 'departamento_codigo', 'nombre', 'tipo_territorial']),
+        ];
     }
 }

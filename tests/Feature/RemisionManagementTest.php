@@ -381,19 +381,95 @@ class RemisionManagementTest extends TestCase
         $this->assertDatabaseCount('auditorias', 1);
     }
 
-    public function test_search_disambiguates_eps_and_returns_all_patient_document_matches_without_clinical_history(): void
+    public function test_search_requires_eps_and_matches_optional_partial_number_without_clinical_history(): void
     {
         $one = $this->remision(['numero_remision' => '001-SHARED']);
         $other = Eps::factory()->create();
         $two = $this->remision(['numero_remision' => '001-SHARED', 'eps_id' => $other->id, 'estado' => 'USADA']);
-        $this->paciente->historiaClinica()->create(['fecha_apertura' => now()]);
         $this->actingAs($this->operador(['RF-021']));
-        $this->get(route('remisiones.search', ['buscar' => '001-SHARED']))->assertOk()->assertSee($this->eps->nit)->assertSee($other->nit)->assertSee(route('remisiones.show', $two), false);
-        $this->get(route('remisiones.search', ['buscar' => $this->paciente->numero_documento]))->assertViewHas('remisiones', fn ($rs) => $rs->count() === 2);
-        $this->get(route('remisiones.search', ['buscar' => '001-SHARED', 'eps_id' => $other->id]))->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === [$two->id]);
-        $this->get(route('remisiones.show', $one))->assertOk()->assertSee($one->numero_remision)->assertDontSee('Antecedentes clínicos');
+        $this->get(route('remisiones.search'))->assertOk()->assertViewHas('remisiones', fn ($rs) => $rs->isEmpty());
+        $this->getJson(route('remisiones.search', ['buscar' => 'SHARED']))->assertUnprocessable()->assertJsonValidationErrors('eps_id');
+        foreach ([[], ['buscar' => 'shared']] as $extra) {
+            $this->get(route('remisiones.search', ['eps_id' => $other->id, ...$extra]))->assertOk()
+                ->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === [$two->id])
+                ->assertSee(route('remisiones.show', $two), false)->assertDontSee(route('remisiones.show', $one), false);
+        }
+        $this->get(route('remisiones.show', $one))->assertOk()->assertDontSee('Antecedentes clínicos');
         $this->get('/remisiones/999999')->assertNotFound();
         $this->get(route('remisiones.index'))->assertForbidden();
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_search_without_eps_does_not_query_remissions_and_list_permission_does_not_grant_search(): void
+    {
+        $this->remision();
+        $reader = $this->operador(['RF-021']);
+        $listOnly = $this->operador(['RF-022']);
+        $queries = [];
+        DB::listen(static function (QueryExecuted $query) use (&$queries): void {
+            if (str_contains(strtolower($query->sql), 'from "remisiones_eps"')) {
+                $queries[] = $query->sql;
+            }
+        });
+        $this->actingAs($reader)->get(route('remisiones.search'))->assertOk()->assertSee('Seleccione una EPS para consultar sus remisiones.');
+        $this->getJson(route('remisiones.search', ['buscar' => 'QA']))->assertUnprocessable()->assertJsonValidationErrors('eps_id');
+        $this->actingAs($listOnly)->get(route('remisiones.search', ['eps_id' => $this->eps->id]))->assertForbidden();
+        $this->assertSame([], $queries);
+        $this->get(route('remisiones.index'))->assertOk();
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_search_preserves_all_states_and_paginates_stably_without_writes(): void
+    {
+        foreach (range(1, 17) as $i) {
+            $this->remision(['numero_remision' => 'QA-'.$i, 'estado' => ['VIGENTE', 'VENCIDA', 'USADA', 'ANULADA'][$i % 4]]);
+        }
+        $before = RemisionEps::query()->orderBy('id')->get()->map->getAttributes()->all();
+        $this->actingAs($this->operador(['RF-021']));
+        $response = $this->get(route('remisiones.search', ['eps_id' => $this->eps->id]));
+        $response->assertOk()->assertSee('Total de registros: 17')
+            ->assertViewHas('remisiones', fn ($rs) => $rs->total() === 17 && $rs->count() === 15);
+        $this->assertLessThan(strpos($response->getContent(), 'id="buscar"'), strpos($response->getContent(), 'id="eps_id"'));
+        $this->get(route('remisiones.search', ['eps_id' => $this->eps->id, 'page' => 2]))
+            ->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === array_column(array_slice($before, 15), 'id'));
+        $this->assertSame($before, RemisionEps::query()->orderBy('id')->get()->map->getAttributes()->all());
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_search_pagination_preserves_filters_order_and_eps_isolation_beyond_last_page(): void
+    {
+        $other = Eps::factory()->create();
+        foreach (range(1, 17) as $i) {
+            $this->remision(['numero_remision' => 'BUSQUEDA-'.$i]);
+        }
+        $this->remision(['eps_id' => $other->id, 'numero_remision' => 'BUSQUEDA-OTRA']);
+        $expected = RemisionEps::query()->where('eps_id', $this->eps->id)->orderBy('id')->pluck('id')->all();
+        $this->actingAs($this->operador(['RF-021']));
+        $params = ['eps_id' => $this->eps->id, 'buscar' => 'BUSQUEDA'];
+        $first = $this->get(route('remisiones.search', $params))->assertOk()->assertSee('Total de registros: 17')
+            ->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === array_slice($expected, 0, 15));
+        $this->assertStringContainsString('eps_id='.$this->eps->id.'&amp;buscar=BUSQUEDA&amp;page=2', $first->getContent());
+        $this->get(route('remisiones.search', [...$params, 'page' => 2]))->assertOk()->assertSee('Total de registros: 17')
+            ->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === array_slice($expected, 15));
+        $this->get(route('remisiones.search', [...$params, 'page' => 3]))->assertOk()->assertSee('Total de registros: 17')
+            ->assertSee('No se encontraron remisiones.')->assertViewHas('remisiones', fn ($rs) => $rs->isEmpty() && $rs->total() === 17);
+        $this->assertDatabaseCount('auditorias', 0);
+    }
+
+    public function test_search_escapes_literal_special_characters_and_rejects_manipulation(): void
+    {
+        $this->actingAs($this->operador(['RF-021']));
+        foreach (['%', '_', '!', "' OR 1=1 --"] as $term) {
+            $r = $this->remision(['numero_remision' => 'QA'.$term.'FIN']);
+            $this->get(route('remisiones.search', ['eps_id' => $this->eps->id, 'buscar' => $term]))
+                ->assertOk()->assertViewHas('remisiones', fn ($rs) => $rs->pluck('id')->all() === [$r->id]);
+        }
+        foreach ([['eps_id' => 999999], ['eps_id' => ''], ['eps_id' => ['x']], ['eps_id' => $this->eps->id, 'buscar' => ['x']], ['eps_id' => $this->eps->id, 'page' => -1]] as $filters) {
+            $this->getJson(route('remisiones.search', $filters))->assertUnprocessable();
+        }
+        $this->getJson(route('remisiones.search', ['eps_id' => $this->eps->id, 'page' => 100001]))
+            ->assertUnprocessable()->assertJsonPath('errors.page.0', 'La página no puede superar 100000.');
+        $this->assertDatabaseCount('auditorias', 0);
     }
 
     public function test_expiry_is_evaluated_in_bogota_inclusively_without_mutating_reads_or_terminal_states(): void
@@ -426,7 +502,7 @@ class RemisionManagementTest extends TestCase
         }
         $this->get(route('remisiones.search', ['buscar' => ['X']]))->assertInvalid('buscar');
         $this->get(route('remisiones.search', ['eps_id' => ['id' => [99999]]]))->assertInvalid('eps_id');
-        $this->get(route('remisiones.search', ['buscar' => 'inexistente']))->assertSee('Total de registros: 0');
+        $this->get(route('remisiones.search', ['eps_id' => $this->eps->id, 'buscar' => 'inexistente']))->assertSee('Total de registros: 0');
     }
 
     public static function validityRanges(): array
@@ -601,7 +677,7 @@ class RemisionManagementTest extends TestCase
         $r = $this->remision();
         $before = $r->getAttributes();
         $actor = $this->operador(['RF-019', 'RF-021', 'RF-016']);
-        $data = $this->eps->only(['nit', 'nombre', 'telefono', 'correo_electronico', 'direccion', 'ciudad', 'estado']);
+        $data = $this->eps->only(['nombre', 'telefono', 'correo_electronico', 'direccion', 'estado']);
         $this->actingAs($actor)->put(route('eps.update', $this->eps), [...$data, 'nombre' => 'Nombre corregido', 'estado' => 'INACTIVA', 'motivo' => 'Motivo ficticio'])->assertSessionHasNoErrors();
         $this->assertSame($before, $r->refresh()->getAttributes());
         $this->get(route('remisiones.show', $r))->assertOk()->assertSee('Nombre corregido');

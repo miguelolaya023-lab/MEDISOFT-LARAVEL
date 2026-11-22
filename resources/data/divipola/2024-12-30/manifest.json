@@ -1,0 +1,50 @@
+{
+  "dataset": "gdxc-w37w",
+  "edition": "2024-12-30",
+  "latest_edition_claimed": false,
+  "publisher": "Departamento Administrativo Nacional de Estadística - DANE",
+  "source_url": "https://www.datos.gov.co/resource/gdxc-w37w.json",
+  "retrieval_url": "https://www.datos.gov.co/resource/gdxc-w37w.json?$limit=5000&$order=cod_mpio",
+  "metadata_url": "https://www.datos.gov.co/api/views/gdxc-w37w.json",
+  "count_url": "https://www.datos.gov.co/resource/gdxc-w37w.json?$select=count(*)",
+  "data_cutoff": "2024-12-30",
+  "rows_updated_at": "2025-01-24T20:44:32+00:00",
+  "metadata_updated_at": "2026-09-24T23:53:50+00:00",
+  "retrieved_at": "2026-11-10T04:48:01.604787+00:00",
+  "license": {
+    "name": "Creative Commons Attribution | Share Alike 4.0 International",
+    "logoUrl": "images/licenses/cc30bysa.png",
+    "termsLink": "http://creativecommons.org/licenses/by-sa/4.0/legalcode"
+  },
+  "license_id": "CC_40_BY_SA",
+  "attribution": "Departamento Administrativo Nacional de Estadística - DANE",
+  "attribution_url": "https://www.dane.gov.co/",
+  "records": 1122,
+  "department_codes": 33,
+  "columns": [
+    "cod_dpto",
+    "dpto",
+    "cod_mpio",
+    "nom_mpio",
+    "tipo_municipio",
+    "longitud",
+    "latitud"
+  ],
+  "territorial_types": {
+    "Municipio": 1103,
+    "Isla": 1,
+    "Área no municipalizada": 18
+  },
+  "remote_count": 1122,
+  "sha256": {
+    "source.json": "1028ab04c10a08fa860dd89e621de1eb9246710a56102c915f0988ae9e10d63d",
+    "metadata.json": "1b58535cecebf715695479fec1ec98cf4c97bd058fe7c84bb16b1ff7034f6efa",
+    "catalogo.json": "5ebbdbae714d8d08764cdf5a24c9b92cde9fb5e14decfd1550a8b24d9df30014"
+  },
+  "transformations": [
+    "Records sorted by cod_mpio; fields ordered as columns.",
+    "UTF-8 JSON without ASCII escaping, compact separators, final LF.",
+    "Official names, string codes, territorial types and coordinate strings preserved without changes."
+  ],
+  "normalization": "json_encode JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES, final LF"
+}

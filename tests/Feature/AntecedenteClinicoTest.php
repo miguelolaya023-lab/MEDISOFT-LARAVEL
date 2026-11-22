@@ -86,6 +86,28 @@ class AntecedenteClinicoTest extends TestCase
         return ['descripcion' => 'Antecedente ficticio exclusivo del ámbito clínico.', 'tipo' => 'Personal', ...$cambios];
     }
 
+    public function test_disease_label_keeps_optional_tipo_and_historical_revisions(): void
+    {
+        $paciente = $this->paciente();
+        $registro = $this->antecedente($paciente);
+        $before = $registro->getAttributes();
+        $this->actingAs($this->medico());
+        foreach ([$this->url('index', $paciente), $this->url('edit', $paciente, $registro)] as $url) {
+            $this->get($url)->assertOk()->assertSee('Enfermedad (opcional)')->assertSee('name="tipo"', false)->assertDontSee('Tipo (opcional)');
+        }
+        $this->assertSame($before, $registro->refresh()->getAttributes());
+        $this->assertDatabaseCount('antecedente_clinico_revisiones', 0);
+        $this->put($this->url('update', $paciente, $registro), $this->datos(['tipo' => null]))->assertSessionHasNoErrors();
+        $this->assertNull($registro->refresh()->tipo);
+        $this->assertSame('Familiar', $registro->revisiones()->sole()->tipo);
+        $this->assertSame($before['fecha_registro'], $registro->getRawOriginal('fecha_registro'));
+        $this->get($this->url('index', $paciente))->assertSee('Sin enfermedad especificada')->assertDontSee('Sin tipo');
+        $this->post($this->url('store', $paciente), $this->datos(['tipo' => 'Enfermedad ficticia']))->assertSessionHasNoErrors();
+        $this->assertSame('Enfermedad ficticia', AntecedenteClinico::query()->latest('id')->firstOrFail()->tipo);
+        $this->postJson($this->url('store', $paciente), $this->datos(['tipo' => str_repeat('x', 101)]))
+            ->assertUnprocessable()->assertJsonPath('errors.tipo.0', 'La enfermedad no puede superar 100 caracteres.');
+    }
+
     public function test_authorized_doctor_registers_without_appointment_or_patient_account_in_existing_history(): void
     {
         $user = $this->medico();
