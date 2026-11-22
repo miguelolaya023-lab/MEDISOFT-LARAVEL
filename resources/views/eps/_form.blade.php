@@ -1,9 +1,17 @@
-@foreach (['nit' => ['NIT', 50], 'nombre' => ['Nombre', 150], 'telefono' => ['Teléfono', 30], 'correo_electronico' => ['Correo electrónico', 255], 'direccion' => ['Dirección', 255], 'ciudad' => ['Ciudad', 100]] as $campo => [$etiqueta, $limite])
+@foreach (['nit' => ['NIT', 50], 'nombre' => ['Nombre', 150], 'telefono' => ['Teléfono', 30], 'correo_electronico' => ['Correo electrónico', 255], 'direccion' => ['Dirección', 255]] as $campo => [$etiqueta, $limite])
+    @if ($campo === 'nit' && isset($eps))
+        <div>
+            <p class="text-sm font-medium text-gray-700">NIT</p>
+            <p class="text-sm text-gray-700">{{ $eps->nit }}</p>
+            <x-input-error :messages="$errors->get('nit')" class="mt-2" />
+        </div>
+    @else
     <div>
         <x-input-label :for="$campo" :value="$etiqueta" />
         <x-text-input :id="$campo" :name="$campo" :type="$campo === 'correo_electronico' ? 'email' : 'text'" :value="is_string(old($campo, $eps->$campo ?? '')) ? old($campo, $eps->$campo ?? '') : ''" :maxlength="$limite" required class="mt-1 block w-full" />
         <x-input-error :messages="$errors->get($campo)" class="mt-2" />
     </div>
+    @endif
 @endforeach
 <div>
     <x-input-label for="estado" value="Estado" />
@@ -22,3 +30,7 @@
         <x-input-error :messages="$errors->get('motivo')" class="mt-2" />
     </div>
 @endif
+
+<div class="md:col-span-2">
+    <x-geographic-fields :departamentos="$departamentos" :municipios="$municipios" :paciente="$eps ?? null" />
+</div>

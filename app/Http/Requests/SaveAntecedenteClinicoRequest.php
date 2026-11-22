@@ -46,8 +46,8 @@ class SaveAntecedenteClinicoRequest extends FormRequest
             'descripcion.required' => 'Ingrese la descripción del antecedente clínico.',
             'descripcion.string' => 'La descripción debe ser texto.',
             'descripcion.max' => 'La descripción no puede superar 10000 caracteres.',
-            'tipo.string' => 'El tipo debe ser texto.',
-            'tipo.max' => 'El tipo no puede superar 100 caracteres.',
+            'tipo.string' => 'La enfermedad debe ser texto.',
+            'tipo.max' => 'La enfermedad no puede superar 100 caracteres.',
         ];
     }
 

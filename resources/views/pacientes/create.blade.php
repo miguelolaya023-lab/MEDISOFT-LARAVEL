@@ -19,7 +19,7 @@
                             </select>
                             <x-input-error :messages="$errors->get('tipo_documento')" class="mt-2" />
                         </div>
-                        @foreach (['numero_documento' => ['Número de documento', 30], 'nombres' => ['Nombres', 100], 'apellidos' => ['Apellidos', 100], 'telefono' => ['Teléfono', 30], 'direccion' => ['Dirección', 255], 'ciudad' => ['Ciudad', 100]] as $campo => [$etiqueta, $limite])
+                        @foreach (['numero_documento' => ['Número de documento', 30], 'nombres' => ['Nombres', 100], 'apellidos' => ['Apellidos', 100], 'telefono' => ['Teléfono', 30], 'direccion' => ['Dirección', 255]] as $campo => [$etiqueta, $limite])
                             <div>
                                 <x-input-label :for="$campo" :value="$etiqueta" />
                                 <x-text-input :id="$campo" :name="$campo" :value="old($campo)" :maxlength="$limite" required class="mt-1 block w-full focus:border-teal-600 focus:ring-teal-600" />
@@ -55,6 +55,7 @@
                             <x-input-error :messages="$errors->get('tipo_paciente')" class="mt-2" />
                         </div>
                     </div>
+                    <x-geographic-fields :departamentos="$departamentos" :municipios="$municipios"  />
                     <x-input-error :messages="$errors->all()" />
                     <div class="flex items-center gap-4">
                         <x-primary-button class="bg-teal-700 hover:bg-teal-800 focus:ring-teal-600">Guardar paciente</x-primary-button>

@@ -24,7 +24,7 @@
                 <h3 id="antecedentes-registrados" class="font-semibold text-gray-800">Antecedentes registrados</h3>
                 @forelse ($antecedentes as $registro)
                     <article class="space-y-2 border-b border-gray-100 pb-4">
-                        <p class="text-sm text-gray-600">{{ $registro->fecha_registro->format('Y-m-d H:i') }} · {{ $registro->tipo ?? 'Sin tipo' }}</p>
+                        <p class="text-sm text-gray-600">{{ $registro->fecha_registro->format('Y-m-d H:i') }} · {{ $registro->tipo ?? 'Sin enfermedad especificada' }}</p>
                         <p class="whitespace-pre-wrap text-gray-800">{{ $registro->descripcion }}</p>
                         @if ($puedeEscribir)
                             <a href="{{ route('antecedentes.edit', ['paciente' => $paciente, 'antecedente' => $registro]) }}" class="text-sm text-teal-700 underline">Corregir antecedente</a>

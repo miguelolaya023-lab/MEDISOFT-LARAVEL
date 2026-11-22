@@ -1,0 +1,617 @@
+{
+  "id" : "gdxc-w37w",
+  "name" : "DIVIPOLA- Códigos municipios",
+  "assetType" : "dataset",
+  "attribution" : "Departamento Administrativo Nacional de Estadística - DANE",
+  "attributionLink" : "https://www.dane.gov.co/",
+  "averageRating" : 0,
+  "category" : "Mapas Nacionales",
+  "createdAt" : 1468463872,
+  "description" : "Código de la división Político Administrativa del país, Actualización a corte 30 diciembre 2024.",
+  "diciBackend" : false,
+  "displayType" : "table",
+  "downloadCount" : 272700,
+  "hideFromCatalog" : false,
+  "hideFromDataJson" : false,
+  "licenseId" : "CC_40_BY_SA",
+  "locked" : false,
+  "newBackend" : true,
+  "numberOfComments" : 4,
+  "oid" : 41073232,
+  "provenance" : "official",
+  "publicationAppendEnabled" : false,
+  "publicationDate" : 1737749624,
+  "publicationGroup" : 11902773,
+  "publicationStage" : "published",
+  "rowsUpdatedAt" : 1737751472,
+  "tableId" : 19749063,
+  "totalTimesRated" : 0,
+  "viewCount" : 197047,
+  "viewLastModified" : 1790294030,
+  "viewType" : "tabular",
+  "approvals" : [ {
+    "reviewedAt" : 1606230438,
+    "reviewedAutomatically" : false,
+    "state" : "approved",
+    "submissionId" : 6695621,
+    "submissionObject" : "public_audience_request",
+    "submissionOutcome" : "change_audience",
+    "submittedAt" : 1606230375,
+    "targetAudience" : "public",
+    "workflowId" : 2188,
+    "reviewer" : {
+      "id" : "r4qn-dwdd",
+      "displayName" : "Ministerio de Tecnologías de la Información y las Comunicaciones - Datos Abiertos"
+    },
+    "submissionDetails" : {
+      "permissionType" : "read"
+    },
+    "submissionOutcomeApplication" : {
+      "endedAt" : 1606230438,
+      "failureCount" : 0,
+      "startedAt" : 1606230438,
+      "status" : "success"
+    },
+    "submitter" : {
+      "id" : "r4qn-dwdd",
+      "displayName" : "Ministerio de Tecnologías de la Información y las Comunicaciones - Datos Abiertos"
+    }
+  } ],
+  "clientContext" : {
+    "clientContextVariables" : [ ],
+    "inheritedVariables" : { }
+  },
+  "columns" : [ {
+    "id" : 604492250,
+    "name" : "Código Departamento",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "cod_dpto",
+    "position" : 1,
+    "renderTypeName" : "text",
+    "tableColumnId" : 37222143,
+    "width" : 215,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "99",
+      "null" : "0",
+      "top" : [ {
+        "item" : "05",
+        "count" : "125"
+      }, {
+        "item" : "15",
+        "count" : "123"
+      }, {
+        "item" : "25",
+        "count" : "116"
+      }, {
+        "item" : "68",
+        "count" : "87"
+      }, {
+        "item" : "52",
+        "count" : "64"
+      }, {
+        "item" : "73",
+        "count" : "47"
+      }, {
+        "item" : "13",
+        "count" : "46"
+      }, {
+        "item" : "76",
+        "count" : "42"
+      }, {
+        "item" : "19",
+        "count" : "42"
+      }, {
+        "item" : "54",
+        "count" : "40"
+      }, {
+        "item" : "41",
+        "count" : "37"
+      }, {
+        "item" : "27",
+        "count" : "31"
+      }, {
+        "item" : "23",
+        "count" : "30"
+      }, {
+        "item" : "47",
+        "count" : "30"
+      }, {
+        "item" : "50",
+        "count" : "29"
+      }, {
+        "item" : "17",
+        "count" : "27"
+      }, {
+        "item" : "70",
+        "count" : "26"
+      }, {
+        "item" : "20",
+        "count" : "25"
+      }, {
+        "item" : "08",
+        "count" : "23"
+      }, {
+        "item" : "85",
+        "count" : "19"
+      } ],
+      "smallest" : "05",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492251,
+    "name" : "Nombre Departamento",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "dpto",
+    "position" : 2,
+    "renderTypeName" : "text",
+    "tableColumnId" : 37222144,
+    "width" : 148,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "VICHADA",
+      "null" : "0",
+      "top" : [ {
+        "item" : "ANTIOQUIA",
+        "count" : "125"
+      }, {
+        "item" : "BOYACÁ",
+        "count" : "123"
+      }, {
+        "item" : "CUNDINAMARCA",
+        "count" : "116"
+      }, {
+        "item" : "SANTANDER",
+        "count" : "87"
+      }, {
+        "item" : "NARIÑO",
+        "count" : "64"
+      }, {
+        "item" : "TOLIMA",
+        "count" : "47"
+      }, {
+        "item" : "BOLÍVAR",
+        "count" : "46"
+      }, {
+        "item" : "CAUCA",
+        "count" : "42"
+      }, {
+        "item" : "VALLE DEL CAUCA",
+        "count" : "42"
+      }, {
+        "item" : "NORTE DE SANTANDER",
+        "count" : "40"
+      }, {
+        "item" : "HUILA",
+        "count" : "37"
+      }, {
+        "item" : "CHOCÓ",
+        "count" : "31"
+      }, {
+        "item" : "CÓRDOBA",
+        "count" : "30"
+      }, {
+        "item" : "MAGDALENA",
+        "count" : "30"
+      }, {
+        "item" : "META",
+        "count" : "29"
+      }, {
+        "item" : "CALDAS",
+        "count" : "27"
+      }, {
+        "item" : "SUCRE",
+        "count" : "26"
+      }, {
+        "item" : "CESAR",
+        "count" : "25"
+      }, {
+        "item" : "ATLÁNTICO",
+        "count" : "23"
+      }, {
+        "item" : "CASANARE",
+        "count" : "19"
+      } ],
+      "smallest" : "AMAZONAS",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492249,
+    "name" : "Código Municipio",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "cod_mpio",
+    "position" : 3,
+    "renderTypeName" : "text",
+    "tableColumnId" : 40522116,
+    "width" : 214,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "99773",
+      "null" : "0",
+      "top" : [ {
+        "item" : "73347",
+        "count" : "1"
+      }, {
+        "item" : "25123",
+        "count" : "1"
+      }, {
+        "item" : "52110",
+        "count" : "1"
+      }, {
+        "item" : "23815",
+        "count" : "1"
+      }, {
+        "item" : "13655",
+        "count" : "1"
+      }, {
+        "item" : "94887",
+        "count" : "1"
+      }, {
+        "item" : "50270",
+        "count" : "1"
+      }, {
+        "item" : "13654",
+        "count" : "1"
+      }, {
+        "item" : "05150",
+        "count" : "1"
+      }, {
+        "item" : "41799",
+        "count" : "1"
+      }, {
+        "item" : "86571",
+        "count" : "1"
+      }, {
+        "item" : "73275",
+        "count" : "1"
+      }, {
+        "item" : "15401",
+        "count" : "1"
+      }, {
+        "item" : "73408",
+        "count" : "1"
+      }, {
+        "item" : "66088",
+        "count" : "1"
+      }, {
+        "item" : "52203",
+        "count" : "1"
+      }, {
+        "item" : "27160",
+        "count" : "1"
+      }, {
+        "item" : "05390",
+        "count" : "1"
+      }, {
+        "item" : "52323",
+        "count" : "1"
+      }, {
+        "item" : "19824",
+        "count" : "1"
+      } ],
+      "smallest" : "05001",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492252,
+    "name" : "Nombre Municipio",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "nom_mpio",
+    "position" : 4,
+    "renderTypeName" : "text",
+    "tableColumnId" : 37222145,
+    "width" : 184,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "ZONA BANANERA",
+      "null" : "0",
+      "top" : [ {
+        "item" : "LA UNIÓN",
+        "count" : "4"
+      }, {
+        "item" : "VILLANUEVA",
+        "count" : "4"
+      }, {
+        "item" : "BUENAVISTA",
+        "count" : "4"
+      }, {
+        "item" : "EL PEÑÓN",
+        "count" : "3"
+      }, {
+        "item" : "ALBANIA",
+        "count" : "3"
+      }, {
+        "item" : "SUCRE",
+        "count" : "3"
+      }, {
+        "item" : "GUADALUPE",
+        "count" : "3"
+      }, {
+        "item" : "GRANADA",
+        "count" : "3"
+      }, {
+        "item" : "ARGELIA",
+        "count" : "3"
+      }, {
+        "item" : "CÓRDOBA",
+        "count" : "3"
+      }, {
+        "item" : "NARIÑO",
+        "count" : "3"
+      }, {
+        "item" : "SAN FRANCISCO",
+        "count" : "3"
+      }, {
+        "item" : "LA VICTORIA",
+        "count" : "3"
+      }, {
+        "item" : "SANTA BÁRBARA",
+        "count" : "3"
+      }, {
+        "item" : "BOLÍVAR",
+        "count" : "3"
+      }, {
+        "item" : "SABANALARGA",
+        "count" : "3"
+      }, {
+        "item" : "PÁEZ",
+        "count" : "2"
+      }, {
+        "item" : "BRICEÑO",
+        "count" : "2"
+      }, {
+        "item" : "BARBOSA",
+        "count" : "2"
+      }, {
+        "item" : "CALDAS",
+        "count" : "2"
+      } ],
+      "smallest" : "ABEJORRAL",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492253,
+    "name" : "Tipo: Municipio / Isla / Área no municipalizada",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "tipo_municipio",
+    "position" : 5,
+    "renderTypeName" : "text",
+    "tableColumnId" : 104719010,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "Municipio",
+      "null" : "0",
+      "top" : [ {
+        "item" : "Municipio",
+        "count" : "1103"
+      }, {
+        "item" : "Área no municipalizada",
+        "count" : "18"
+      }, {
+        "item" : "Isla",
+        "count" : "1"
+      } ],
+      "smallest" : "Área no municipalizada",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492254,
+    "name" : "longitud",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "longitud",
+    "position" : 6,
+    "renderTypeName" : "text",
+    "tableColumnId" : 156447423,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "-81,707181",
+      "null" : "0",
+      "top" : [ {
+        "item" : "-73,308399",
+        "count" : "2"
+      }, {
+        "item" : "-73,813938",
+        "count" : "1"
+      }, {
+        "item" : "-72,483519",
+        "count" : "1"
+      }, {
+        "item" : "-76,896004",
+        "count" : "1"
+      }, {
+        "item" : "-75,675371",
+        "count" : "1"
+      }, {
+        "item" : "-72,250157",
+        "count" : "1"
+      }, {
+        "item" : "-73,35607",
+        "count" : "1"
+      }, {
+        "item" : "-74,195145",
+        "count" : "1"
+      }, {
+        "item" : "-72,411363",
+        "count" : "1"
+      }, {
+        "item" : "-75,427249",
+        "count" : "1"
+      }, {
+        "item" : "-74,9329",
+        "count" : "1"
+      }, {
+        "item" : "-73,054795",
+        "count" : "1"
+      }, {
+        "item" : "-73,646847",
+        "count" : "1"
+      }, {
+        "item" : "-73,840466",
+        "count" : "1"
+      }, {
+        "item" : "-75,854442",
+        "count" : "1"
+      }, {
+        "item" : "-75,570844",
+        "count" : "1"
+      }, {
+        "item" : "-73,821638",
+        "count" : "1"
+      }, {
+        "item" : "-75,826648",
+        "count" : "1"
+      }, {
+        "item" : "-74,221154",
+        "count" : "1"
+      }, {
+        "item" : "-72,604717",
+        "count" : "1"
+      } ],
+      "smallest" : "-66,963692",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  }, {
+    "id" : 604492255,
+    "name" : "Latitud",
+    "dataTypeName" : "text",
+    "description" : "",
+    "fieldName" : "latitud",
+    "position" : 7,
+    "renderTypeName" : "text",
+    "tableColumnId" : 156447422,
+    "cachedContents" : {
+      "non_null" : "1122",
+      "largest" : "9,982402",
+      "null" : "0",
+      "top" : [ {
+        "item" : "3,657318",
+        "count" : "1"
+      }, {
+        "item" : "5,120918",
+        "count" : "1"
+      }, {
+        "item" : "8,541163",
+        "count" : "1"
+      }, {
+        "item" : "6,876563",
+        "count" : "1"
+      }, {
+        "item" : "5,878381",
+        "count" : "1"
+      }, {
+        "item" : "4,972917",
+        "count" : "1"
+      }, {
+        "item" : "7,938572",
+        "count" : "1"
+      }, {
+        "item" : "6,553136",
+        "count" : "1"
+      }, {
+        "item" : "7,963938",
+        "count" : "1"
+      }, {
+        "item" : "5,544452",
+        "count" : "1"
+      }, {
+        "item" : "1,723725",
+        "count" : "1"
+      }, {
+        "item" : "6,149903",
+        "count" : "1"
+      }, {
+        "item" : "2,459641",
+        "count" : "1"
+      }, {
+        "item" : "4,949096",
+        "count" : "1"
+      }, {
+        "item" : "6,670078",
+        "count" : "1"
+      }, {
+        "item" : "10,491229",
+        "count" : "1"
+      }, {
+        "item" : "6,407738",
+        "count" : "1"
+      }, {
+        "item" : "2,038237",
+        "count" : "1"
+      }, {
+        "item" : "4,674994",
+        "count" : "1"
+      }, {
+        "item" : "8,255016",
+        "count" : "1"
+      } ],
+      "smallest" : "0,020698",
+      "count" : "1122",
+      "cardinality" : "1122"
+    },
+    "format" : { }
+  } ],
+  "grants" : [ {
+    "inherited" : false,
+    "type" : "viewer",
+    "flags" : [ "public" ]
+  } ],
+  "license" : {
+    "name" : "Creative Commons Attribution | Share Alike 4.0 International",
+    "logoUrl" : "images/licenses/cc30bysa.png",
+    "termsLink" : "http://creativecommons.org/licenses/by-sa/4.0/legalcode"
+  },
+  "metadata" : {
+    "custom_fields" : {
+      "Información de la Entidad" : {
+        "Municipio" : "Bogotá D.C.",
+        "Nombre de la Entidad" : "Departamento Administrativo Nacional de Estadísticas - DANE, Bogotá D.C.",
+        "DIVIPOLA Municipio" : "11001",
+        "Orden" : "Nacional",
+        "Sector" : "Planeación",
+        "Área o dependencia" : "Oficina TIC",
+        "Departamento" : "Bogotá D.C."
+      },
+      "Información de Datos" : {
+        "Cobertura Geográfica" : "Departamental",
+        "Idioma" : "Español",
+        "Frecuencia de Actualización" : "Semestral"
+      }
+    }
+  },
+  "owner" : {
+    "id" : "9jyr-mj4e",
+    "displayName" : "Departamento Administrativo Nacional de Estadística - DANE",
+    "screenName" : "Departamento Administrativo Nacional de Estadística - DANE",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "query" : { },
+  "rights" : [ "read" ],
+  "tableAuthor" : {
+    "id" : "9jyr-mj4e",
+    "displayName" : "Departamento Administrativo Nacional de Estadística - DANE",
+    "screenName" : "Departamento Administrativo Nacional de Estadística - DANE",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "tags" : [ "codigo", "departamento", "municipio", "divipola", "división policito administrativa", "actualización" ],
+  "flags" : [ "default", "ownerMayBeContacted", "restorable", "restorePossibleForType" ]
+}

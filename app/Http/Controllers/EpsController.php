@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GeographicSelection;
 use App\Http\Requests\QueryEpsRequest;
 use App\Http\Requests\SaveEpsRequest;
 use App\Models\Auditoria;
 use App\Models\Eps;
+use App\Models\Municipio;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -19,10 +21,9 @@ class EpsController extends Controller
     public function index(QueryEpsRequest $request): View
     {
         $filtros = $request->validated();
-        $query = Eps::query();
+        $query = Eps::query()->with(['municipio', 'departamento']);
         if (($filtros['ciudad'] ?? '') !== '') {
-            $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $filtros['ciudad']).'%';
-            $query->whereRaw("LOWER(ciudad) LIKE LOWER(?) ESCAPE '!'", [$patron]);
+            $query->atLocation($filtros['ciudad']);
         }
         if (($filtros['estado'] ?? '') !== '') {
             $query->where('estado', $filtros['estado']);
@@ -37,7 +38,7 @@ class EpsController extends Controller
     public function search(QueryEpsRequest $request): View
     {
         $buscar = $request->validated('buscar') ?? '';
-        $entidades = $buscar === '' ? collect() : Eps::query()->where(function (Builder $query) use ($buscar): void {
+        $entidades = $buscar === '' ? collect() : Eps::query()->with(['municipio', 'departamento'])->where(function (Builder $query) use ($buscar): void {
             $query->whereLike('nit', '%'.Eps::normalizarNit($buscar).'%')->orWhereLike('nombre', '%'.$buscar.'%');
         })->orderBy('id')->get();
 
@@ -46,17 +47,19 @@ class EpsController extends Controller
 
     public function create(): View
     {
-        return view('eps.create');
+        return view('eps.create', GeographicSelection::options());
     }
 
     public function show(Eps $eps): View
     {
+        $eps->load(['municipio', 'departamento']);
+
         return view('eps.show', compact('eps'));
     }
 
     public function edit(Eps $eps): View
     {
-        return view('eps.edit', compact('eps'));
+        return view('eps.edit', ['eps' => $eps, ...GeographicSelection::options()]);
     }
 
     public function store(SaveEpsRequest $request): RedirectResponse
@@ -79,13 +82,16 @@ class EpsController extends Controller
         try {
             $eps = DB::transaction(function () use ($request, $eps, $creacion): Eps {
                 $datos = $request->validated();
+                if ($creacion) {
+                    $datos['ciudad'] = Municipio::query()->where('codigo', $datos['municipio_codigo'])->where('departamento_codigo', $datos['departamento_codigo'])->firstOrFail()->nombre;
+                }
                 $entidad = $creacion ? new Eps : Eps::query()->lockForUpdate()->findOrFail($eps->getKey());
                 $cambiaEstado = ! $creacion && $entidad->estado !== $datos['estado'];
                 if ($cambiaEstado && ($datos['motivo'] ?? '') === '') {
                     throw ValidationException::withMessages(['motivo' => 'Ingrese un motivo administrativo para cambiar el estado.']);
                 }
                 $estadoAnterior = $entidad->estado;
-                $entidad->fill(Arr::except($datos, 'motivo'))->save();
+                $entidad->fill(Arr::except($datos, $creacion ? ['motivo'] : ['motivo', 'nit']))->save();
                 Auditoria::query()->create([
                     'user_id' => $request->user()->getKey(), 'accion' => $creacion ? 'EPS_CREADA' : 'EPS_ACTUALIZADA',
                     'entidad' => 'EPS', 'registro_id' => $entidad->getKey(), 'fecha_hora' => now(), 'resultado' => 'EXITO',

@@ -1,5 +1,5 @@
 <div>
-    <x-input-label for="tipo" value="Tipo (opcional)" />
+    <x-input-label for="tipo" value="Enfermedad (opcional)" />
     <x-text-input id="tipo" name="tipo" :value="old('tipo', $antecedente->tipo ?? '')" maxlength="100" class="mt-1 block w-full" />
     <x-input-error :messages="$errors->get('tipo')" class="mt-2" />
 </div>

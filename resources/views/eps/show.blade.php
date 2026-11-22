@@ -4,9 +4,10 @@
         <div class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg">
             @if (session('status'))<p role="status" class="text-sm text-teal-800">{{ session('status') }}</p>@endif
             <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                @foreach (['id' => 'Código', 'nit' => 'NIT', 'nombre' => 'Nombre', 'telefono' => 'Teléfono', 'correo_electronico' => 'Correo electrónico', 'direccion' => 'Dirección', 'ciudad' => 'Ciudad', 'estado' => 'Estado'] as $campo => $etiqueta)
+                @foreach (['id' => 'Código', 'nit' => 'NIT', 'nombre' => 'Nombre', 'telefono' => 'Teléfono', 'correo_electronico' => 'Correo electrónico', 'direccion' => 'Dirección', 'estado' => 'Estado'] as $campo => $etiqueta)
                     <div><dt class="font-semibold text-gray-800">{{ $etiqueta }}</dt><dd class="text-gray-600">{{ $eps->$campo }}</dd></div>
                 @endforeach
+                <div class="md:col-span-2"><x-location-display :registro="$eps" :detalle="true" /></div>
             </dl>
             <div class="flex flex-wrap gap-4">
                 @can('update', $eps)<a href="{{ route('eps.edit', $eps) }}" class="text-sm text-teal-700 underline">Editar EPS</a>@endcan

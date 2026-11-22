@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\PacienteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -24,13 +25,25 @@ class Paciente extends Model
     /** @use HasFactory<PacienteFactory> */
     use HasFactory;
 
+    use HasGeographicLocation;
+
     protected $fillable = [
         'tipo_documento', 'numero_documento', 'nombres', 'apellidos',
         'fecha_nacimiento', 'sexo', 'telefono', 'correo_electronico',
-        'direccion', 'ciudad', 'tipo_paciente',
+        'direccion', 'ciudad', 'tipo_paciente', 'departamento_codigo', 'municipio_codigo',
     ];
 
     protected $attributes = ['estado' => 'ACTIVO'];
+
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class, 'departamento_codigo', 'codigo');
+    }
+
+    public function municipio(): BelongsTo
+    {
+        return $this->belongsTo(Municipio::class, 'municipio_codigo', 'codigo');
+    }
 
     public function remisiones(): HasMany
     {

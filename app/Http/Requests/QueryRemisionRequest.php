@@ -23,8 +23,8 @@ class QueryRemisionRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['eps_id' => ['bail', 'nullable', 'integer', Rule::exists('eps', 'id')], ...($this->routeIs('remisiones.search')
-            ? ['buscar' => ['nullable', 'string', 'max:100']]
+        return ['eps_id' => ['bail', $this->routeIs('remisiones.search') && count($this->query()) > 0 ? 'required' : 'nullable', 'integer', Rule::exists('eps', 'id')], ...($this->routeIs('remisiones.search')
+            ? ['buscar' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1', 'max:100000']]
             : ['estado' => ['nullable', 'string', Rule::in(RemisionEps::ESTADOS)],
                 'vigencia_desde' => ['bail', 'nullable', 'string', 'date_format:Y-m-d'],
                 'vigencia_hasta' => ['bail', 'nullable', 'string', 'date_format:Y-m-d']])];
@@ -48,7 +48,7 @@ class QueryRemisionRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['eps_id.exists' => 'La EPS seleccionada no existe.', 'eps_id.integer' => 'Seleccione una EPS válida.', 'estado.in' => 'Seleccione un estado válido.', '*.string' => 'Ingrese texto válido.', '*.max' => 'La búsqueda no puede superar 100 caracteres.', '*.date_format' => 'Ingrese una fecha válida (AAAA-MM-DD).'];
+        return ['page.max' => 'La página no puede superar 100000.', 'page.min' => 'La página debe ser al menos 1.', 'page.integer' => 'Seleccione una página válida.', 'eps_id.required' => 'Seleccione una EPS para consultar sus remisiones.', 'eps_id.exists' => 'La EPS seleccionada no existe.', 'eps_id.integer' => 'Seleccione una EPS válida.', 'estado.in' => 'Seleccione un estado válido.', '*.string' => 'Ingrese texto válido.', '*.max' => 'La búsqueda no puede superar 100 caracteres.', '*.date_format' => 'Ingrese una fecha válida (AAAA-MM-DD).'];
     }
 
     protected function getRedirectUrl(): string

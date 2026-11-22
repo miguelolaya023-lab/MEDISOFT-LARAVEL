@@ -5,10 +5,11 @@
             <div class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg">
                 @if (session('status'))<p role="status" class="text-sm text-teal-800">{{ session('status') }}</p>@endif
                 <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    @foreach (['id' => 'Código', 'tipo_documento' => 'Tipo de documento', 'numero_documento' => 'Número de documento', 'nombres' => 'Nombres', 'apellidos' => 'Apellidos', 'sexo' => 'Sexo', 'telefono' => 'Teléfono', 'correo_electronico' => 'Correo electrónico', 'direccion' => 'Dirección', 'ciudad' => 'Ciudad', 'tipo_paciente' => 'Preferencia del paciente', 'estado' => 'Estado'] as $campo => $etiqueta)
+                    @foreach (['id' => 'Código', 'tipo_documento' => 'Tipo de documento', 'numero_documento' => 'Número de documento', 'nombres' => 'Nombres', 'apellidos' => 'Apellidos', 'sexo' => 'Sexo', 'telefono' => 'Teléfono', 'correo_electronico' => 'Correo electrónico', 'direccion' => 'Dirección', 'tipo_paciente' => 'Preferencia del paciente', 'estado' => 'Estado'] as $campo => $etiqueta)
                         <div><dt class="font-semibold text-gray-800">{{ $etiqueta }}</dt><dd class="text-gray-600">{{ $paciente->$campo ?? 'Sin registrar' }}</dd></div>
                     @endforeach
                     <div><dt class="font-semibold text-gray-800">Fecha de nacimiento</dt><dd class="text-gray-600">{{ $paciente->fecha_nacimiento->format('Y-m-d') }}</dd></div>
+                    <div class="md:col-span-2"><x-location-display :registro="$paciente" :detalle="true" /></div>
                 </dl>
                 <div class="flex flex-wrap gap-4">
                     @can('viewAny', \App\Models\AntecedenteClinico::class)<a href="{{ route('antecedentes.index', $paciente) }}" class="text-sm text-teal-700 underline">Antecedentes clínicos</a>@endcan
