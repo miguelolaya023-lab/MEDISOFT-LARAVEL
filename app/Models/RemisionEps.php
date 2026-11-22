@@ -46,6 +46,13 @@ class RemisionEps extends Model
         }
     }
 
+    public function scopeAgendablePara(Builder $query, string $fecha): void
+    {
+        $query->where('estado', 'VIGENTE')
+            ->whereDate('fecha_remision', '<=', $fecha)->whereDate('vigencia_hasta', '>=', $fecha)
+            ->whereDoesntHave('citas', fn (Builder $citas) => $citas->ocupaHorario());
+    }
+
     public function paciente(): BelongsTo
     {
         return $this->belongsTo(Paciente::class);
@@ -54,6 +61,11 @@ class RemisionEps extends Model
     public function eps(): BelongsTo
     {
         return $this->belongsTo(Eps::class);
+    }
+
+    public function citas(): HasMany
+    {
+        return $this->hasMany(Cita::class, 'remision_id');
     }
 
     public function cambiosEstado(): HasMany

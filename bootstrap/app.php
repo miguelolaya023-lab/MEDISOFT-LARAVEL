@@ -147,7 +147,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ($request->expectsJson() ? response()->json(['message' => $mensaje], 503) : response($mensaje, 503))->header('Cache-Control', 'no-store, private');
         });
         $esFalloSqlCita = static function (Throwable $exception, Request $request): bool {
-            if (! $request->routeIs('citas.create', 'citas.store', 'citas.confirmation')) {
+            if (! $request->routeIs('citas.create', 'citas.store', 'citas.confirmation', 'citas.eps.*')) {
                 return false;
             }
             do {
@@ -163,7 +163,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if (! $esFalloSqlCita($exception, request())) {
                 return null;
             }
-            Log::error('Error de base de datos en citas particulares.', ['modulo' => 'RF-024', 'operacion' => request()->route()->getName()]);
+            $eps = request()->routeIs('citas.eps.*');
+            Log::error($eps ? 'Error de base de datos en citas EPS.' : 'Error de base de datos en citas particulares.', [
+                'modulo' => $eps ? 'RF-025' : 'RF-024',
+                'operacion' => request()->route()->getName(),
+            ]);
 
             return false;
         });
@@ -171,7 +175,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if (! $esFalloSqlCita($exception, $request)) {
                 return null;
             }
-            $mensaje = 'No fue posible completar la operación de citas particulares. Intente nuevamente.';
+            $mensaje = $request->routeIs('citas.eps.*')
+                ? 'No fue posible completar la operación de citas EPS. Intente nuevamente.'
+                : 'No fue posible completar la operación de citas particulares. Intente nuevamente.';
 
             return ($request->expectsJson() ? response()->json(['message' => $mensaje], 503) : response($mensaje, 503))->header('Cache-Control', 'no-store, private');
         });

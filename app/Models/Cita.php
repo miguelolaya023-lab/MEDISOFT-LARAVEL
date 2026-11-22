@@ -16,7 +16,7 @@ class Cita extends Model
 
     protected $fillable = ['motivo_consulta', 'valor_base'];
 
-    protected $hidden = ['inicio_ocupado'];
+    protected $hidden = ['inicio_ocupado', 'remision_reservada'];
 
     protected function casts(): array
     {
@@ -31,6 +31,11 @@ class Cita extends Model
     public function medico(): BelongsTo
     {
         return $this->belongsTo(Medico::class);
+    }
+
+    public function remision(): BelongsTo
+    {
+        return $this->belongsTo(RemisionEps::class, 'remision_id');
     }
 
     public function disponibilidad(): BelongsTo

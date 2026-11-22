@@ -36,4 +36,25 @@ class Medico extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * La vista previa no reserva. Al confirmar, consultar bajo el mutex Médico.
+     *
+     * @return list<array{inicio: string, fin: string, bloque_id: int}>
+     */
+    public function intervalosLibres(string $fecha): array
+    {
+        $bloques = $this->disponibilidades()->whereDate('fecha', $fecha)->orderBy('hora_inicio')->get();
+        $ocupadas = $this->citas()->ocupaHorario()->whereDate('fecha', $fecha)->get(['hora_inicio', 'hora_fin']);
+        $intervalos = [];
+        foreach ($bloques as $bloque) {
+            foreach ($bloque->intervalos() as $intervalo) {
+                if (Cita::inicioEsFuturo($fecha, $intervalo['inicio']) && ! $ocupadas->contains(fn (Cita $cita) => $cita->hora_inicio < $intervalo['fin'].':00' && $cita->hora_fin > $intervalo['inicio'].':00')) {
+                    $intervalos[] = [...$intervalo, 'bloque_id' => $bloque->id];
+                }
+            }
+        }
+
+        return $intervalos;
+    }
 }

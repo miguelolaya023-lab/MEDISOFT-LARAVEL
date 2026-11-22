@@ -10,6 +10,7 @@ use App\Models\CambioEstadoRemision;
 use App\Models\Eps;
 use App\Models\Paciente;
 use App\Models\RemisionEps;
+use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -72,6 +73,7 @@ class RemisionEpsController extends Controller
         $data = $request->validated();
         try {
             $remision = DB::transaction(function () use ($data, $request): RemisionEps {
+                User::query()->sharedLock()->findOrFail($request->user()->id);
                 $paciente = Paciente::query()->lockForUpdate()->findOrFail($data['paciente_id']);
                 $eps = Eps::query()->lockForUpdate()->findOrFail($data['eps_id']);
                 if ($paciente->estado !== 'ACTIVO') {
@@ -107,18 +109,17 @@ class RemisionEpsController extends Controller
         return view('remisiones.edit', ['remision' => $remision->load(['paciente', 'eps'])]);
     }
 
-    /**
-     * RN-07: al integrar CitaEPS/AtencionMedica, bloquear la remisión también
-     * desde agenda/atención y validar fechas de citas antes de reducir vigencia.
-     * La identidad se conserva; una remisión USADA solo admite observación.
-     */
     public function update(SaveRemisionRequest $request, RemisionEps $remision): RedirectResponse
     {
         DB::transaction(function () use ($request, $remision): void {
+            User::query()->sharedLock()->findOrFail($request->user()->id);
             $remision = RemisionEps::query()->lockForUpdate()->findOrFail($remision->id);
             $data = $request->validated();
             if ($data['vigencia_hasta'] < $remision->fecha_remision->toDateString()) {
                 throw ValidationException::withMessages(['vigencia_hasta' => 'La vigencia no puede ser anterior a la emisión.']);
+            }
+            if ($remision->citas()->ocupaHorario()->whereDate('fecha', '>', $data['vigencia_hasta'])->exists()) {
+                throw ValidationException::withMessages(['vigencia_hasta' => 'La vigencia debe cubrir las citas EPS no canceladas.']);
             }
             if ($remision->estado === 'USADA') {
                 $errores = [];
@@ -154,14 +155,17 @@ class RemisionEpsController extends Controller
         return view('remisiones.state', ['remision' => $remision->load(['paciente', 'eps'])]);
     }
 
-    /** RN-07: agenda/atención futuras deben validar asociaciones bajo este mismo bloqueo. */
     public function changeState(ChangeRemisionStateRequest $request, RemisionEps $remision): RedirectResponse
     {
         DB::transaction(function () use ($request, $remision): void {
+            User::query()->sharedLock()->findOrFail($request->user()->id);
             $remision = RemisionEps::query()->lockForUpdate()->findOrFail($remision->id);
             $anterior = $remision->estadoActual();
             if (! in_array($anterior, ['VIGENTE', 'VENCIDA'], true)) {
                 throw ValidationException::withMessages(['estado' => 'El estado actual no permite anular esta remisión.']);
+            }
+            if ($remision->citas()->ocupaHorario()->exists()) {
+                throw ValidationException::withMessages(['estado' => 'No se puede anular una remisión con una cita EPS no cancelada.']);
             }
             $this->recordState($remision, $request->user()->id, $anterior, 'ANULADA', $request->validated('motivo'));
             $remision->estado = 'ANULADA';

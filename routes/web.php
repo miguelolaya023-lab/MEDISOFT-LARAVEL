@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\CitaEpsController;
 use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
@@ -20,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => view('welcome'));
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->middleware('verified')->name('dashboard');
+    Route::get('/citas/eps/create', [CitaEpsController::class, 'create'])->name('citas.eps.create');
+    Route::post('/citas/eps', [CitaEpsController::class, 'store'])->name('citas.eps.store');
+    Route::get('/citas/eps/{cita}/confirmacion', [CitaEpsController::class, 'confirmation'])->whereNumber('cita')->can('confirmEps', 'cita')->name('citas.eps.confirmation');
     Route::get('/citas/particulares/create', [CitaParticularController::class, 'create'])->name('citas.create');
     Route::post('/citas/particulares', [CitaParticularController::class, 'store'])->name('citas.store');
     Route::get('/citas/{cita}/confirmacion', [CitaParticularController::class, 'confirmation'])->whereNumber('cita')->can('confirm', 'cita')->name('citas.confirmation');
