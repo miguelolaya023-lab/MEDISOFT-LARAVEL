@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Cita extends Model
 {
@@ -41,6 +42,11 @@ class Cita extends Model
     public function disponibilidad(): BelongsTo
     {
         return $this->belongsTo(DisponibilidadMedica::class, 'disponibilidad_medica_id');
+    }
+
+    public function atencion(): HasOne
+    {
+        return $this->hasOne(AtencionMedica::class);
     }
 
     public function creador(): BelongsTo

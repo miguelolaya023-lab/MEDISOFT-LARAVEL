@@ -36,4 +36,9 @@ class CitaPolicy
     {
         return $user->tienePermiso('RF-027');
     }
+
+    public function startAttendance(User $user): bool
+    {
+        return $user->tienePermiso('RF-028') && $user->medico()->habilitado()->exists();
+    }
 }
