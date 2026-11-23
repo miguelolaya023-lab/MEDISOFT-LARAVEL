@@ -22,6 +22,9 @@
                     @can('consultarAgendaDiaria', \App\Models\Cita::class)
                     <x-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-nav-link>
                     @endcan
+                    @can('notificarCita', \App\Models\Cita::class)
+                    <x-nav-link :href="route('notificaciones.citas.index')" :active="request()->routeIs('notificaciones.citas.*')">Notificaciones de citas</x-nav-link>
+                    @endcan
                     @can('reprogram', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-nav-link>
                     @endcan
@@ -150,6 +153,9 @@
             @endcan
             @can('consultarAgendaDiaria', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-responsive-nav-link>
+            @endcan
+            @can('notificarCita', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('notificaciones.citas.index')" :active="request()->routeIs('notificaciones.citas.*')">Notificaciones de citas</x-responsive-nav-link>
             @endcan
             @can('reprogram', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-responsive-nav-link>

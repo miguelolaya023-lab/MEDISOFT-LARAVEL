@@ -10,6 +10,7 @@ use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\CitaReprogramacionController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
+use App\Http\Controllers\NotificacionCitaController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
@@ -40,6 +41,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'show'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.show');
     Route::patch('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'update'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.update');
     Route::get('/agenda/diaria', AgendaDiariaController::class)->can('consultarAgendaDiaria', Cita::class)->middleware('cache.headers:no_store;private')->name('agenda.diaria.index');
+    Route::middleware('cache.headers:no_store;private')->group(function () {
+        Route::get('/notificaciones/citas', [NotificacionCitaController::class, 'index'])->can('notificarCita', Cita::class)->name('notificaciones.citas.index');
+        Route::post('/citas/{cita}/notificaciones', [NotificacionCitaController::class, 'store'])->whereNumber('cita')->can('notificarCita', 'cita')->name('notificaciones.citas.store');
+        Route::get('/citas/{cita}/notificaciones/{intento}', [NotificacionCitaController::class, 'show'])->whereNumber(['cita', 'intento'])->can('notificarCita', 'cita')->name('notificaciones.citas.show');
+    });
     Route::get('/atenciones/iniciar', [AtencionMedicaController::class, 'index'])->can('verAgendaClinica', Cita::class)->name('atenciones.index');
     Route::get('/atenciones/{atencion}', [AtencionClinicaController::class, 'show'])->whereNumber('atencion')->can('view', 'atencion')->middleware('cache.headers:no_store;private')->name('atenciones.clinica.show');
     Route::patch('/atenciones/{atencion}/motivo', [AtencionClinicaController::class, 'motivo'])->whereNumber('atencion')->can('registrarMotivo', 'atencion')->name('atenciones.clinica.motivo');
