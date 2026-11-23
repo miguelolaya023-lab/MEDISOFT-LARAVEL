@@ -14,5 +14,10 @@
         </dl>
         <p class="text-sm text-gray-600">La remisión queda vinculada a la cita. Aún no se ha consumido ni se ha generado una atención o un cobro.</p>
         <a href="{{ route('citas.eps.create') }}" class="text-teal-700 underline">Agendar otra consulta EPS</a>
+        @can('reprogram', \App\Models\Cita::class)
+            @if ($cita->estado === 'PROGRAMADA')
+                <a href="{{ route('citas.reprogramar.edit', $cita) }}" class="ml-4 text-teal-700 underline">Reprogramar esta cita</a>
+            @endif
+        @endcan
     </section></div></div>
 </x-app-layout>

@@ -46,11 +46,12 @@ class RemisionEps extends Model
         }
     }
 
-    public function scopeAgendablePara(Builder $query, string $fecha): void
+    public function scopeAgendablePara(Builder $query, string $fecha, ?int $exceptoCita = null): void
     {
         $query->where('estado', 'VIGENTE')
             ->whereDate('fecha_remision', '<=', $fecha)->whereDate('vigencia_hasta', '>=', $fecha)
-            ->whereDoesntHave('citas', fn (Builder $citas) => $citas->ocupaHorario());
+            ->whereDoesntHave('citas', fn (Builder $citas) => $citas->ocupaHorario()
+                ->when($exceptoCita !== null, fn (Builder $ocupadas) => $ocupadas->whereKeyNot($exceptoCita)));
     }
 
     public function paciente(): BelongsTo

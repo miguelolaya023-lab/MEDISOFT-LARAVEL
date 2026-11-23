@@ -58,4 +58,16 @@ class Cita extends Model
     {
         return CarbonImmutable::createFromFormat('!Y-m-d H:i', $fecha.' '.substr($hora, 0, 5), 'America/Bogota')->greaterThan(now('America/Bogota'));
     }
+
+    public function horario(): string
+    {
+        return $this->fecha->toDateString().' '.$this->hora_inicio.'–'.$this->hora_fin;
+    }
+
+    public function versionHorario(): string
+    {
+        return hash('sha256', implode('|', [
+            $this->id, $this->horario(), $this->disponibilidad_medica_id, $this->estado, $this->getRawOriginal('updated_at'),
+        ]));
+    }
 }

@@ -14,5 +14,10 @@
         </dl>
         <p class="text-sm text-gray-600">La cita no ha generado atención ni pago. Esta confirmación no es una agenda general.</p>
         <a href="{{ route('citas.create') }}" class="text-teal-700 underline">Agendar otra consulta particular</a>
+        @can('reprogram', \App\Models\Cita::class)
+            @if ($cita->estado === 'PROGRAMADA')
+                <a href="{{ route('citas.reprogramar.edit', $cita) }}" class="ml-4 text-teal-700 underline">Reprogramar esta cita</a>
+            @endif
+        @endcan
     </section></div></div>
 </x-app-layout>

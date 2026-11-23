@@ -42,10 +42,12 @@ class Medico extends Model
      *
      * @return list<array{inicio: string, fin: string, bloque_id: int}>
      */
-    public function intervalosLibres(string $fecha): array
+    public function intervalosLibres(string $fecha, ?int $exceptoCita = null): array
     {
         $bloques = $this->disponibilidades()->whereDate('fecha', $fecha)->orderBy('hora_inicio')->get();
-        $ocupadas = $this->citas()->ocupaHorario()->whereDate('fecha', $fecha)->get(['hora_inicio', 'hora_fin']);
+        $ocupadas = $this->citas()->ocupaHorario()->whereDate('fecha', $fecha)
+            ->when($exceptoCita !== null, fn (Builder $citas) => $citas->whereKeyNot($exceptoCita))
+            ->get(['hora_inicio', 'hora_fin']);
         $intervalos = [];
         foreach ($bloques as $bloque) {
             foreach ($bloque->intervalos() as $intervalo) {
