@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\AtencionMedica;
 use App\Models\Cita;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class CitaPolicy
 {
@@ -57,5 +58,20 @@ class CitaPolicy
     public function verAgendaClinica(User $user): bool
     {
         return $this->startAttendance($user) || $user->can('viewAny', AtencionMedica::class);
+    }
+
+    public function notificarCita(User $user, ?Cita $cita = null): bool|Response
+    {
+        if (! $user->tienePermiso('RF-061')) {
+            return false;
+        }
+        if ($cita === null) {
+            return true;
+        }
+
+        $puedeConsultar = $user->rol()->whereIn('nombre', ['Administrador', 'Administrativo'])->exists()
+            || $user->medico()->whereKey($cita->medico_id)->exists();
+
+        return $puedeConsultar ? Response::allow() : Response::denyAsNotFound();
     }
 }
