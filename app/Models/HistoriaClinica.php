@@ -22,6 +22,11 @@ class HistoriaClinica extends Model
         return $this->hasMany(AntecedenteClinico::class);
     }
 
+    public function atenciones(): HasMany
+    {
+        return $this->hasMany(AtencionMedica::class);
+    }
+
     protected function casts(): array
     {
         return ['fecha_apertura' => 'datetime'];

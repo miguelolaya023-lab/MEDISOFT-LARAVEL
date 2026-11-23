@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\AtencionMedica;
 use App\Models\Cita;
 use App\Models\User;
 
@@ -40,5 +41,10 @@ class CitaPolicy
     public function startAttendance(User $user): bool
     {
         return $user->tienePermiso('RF-028') && $user->medico()->habilitado()->exists();
+    }
+
+    public function verAgendaClinica(User $user): bool
+    {
+        return $this->startAttendance($user) || $user->can('viewAny', AtencionMedica::class);
     }
 }

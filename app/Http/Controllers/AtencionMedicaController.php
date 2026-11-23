@@ -31,20 +31,27 @@ class AtencionMedicaController extends Controller
     {
         $hoy = now('America/Bogota')->toDateString();
         $medico = $request->user()->medico()->firstOrFail();
-        $citas = $medico->citas()->with('paciente:id,nombres,apellidos')
-            ->where(function (Builder $citas) use ($hoy): void {
-                $citas->where(fn (Builder $programadas) => $programadas->whereDate('fecha', $hoy)->where('estado', 'PROGRAMADA'))
-                    ->orWhere('estado', 'EN_ATENCION');
+        $puedeIniciar = $request->user()->can('startAttendance', Cita::class);
+        $puedeConsultar = $request->user()->can('viewAny', AtencionMedica::class);
+        $citas = $medico->citas()->with(['paciente:id,nombres,apellidos', 'atencion:id,cita_id'])
+            ->where(function (Builder $citas) use ($hoy, $puedeIniciar, $puedeConsultar): void {
+                $citas->whereIn('estado', $puedeConsultar ? ['EN_ATENCION', 'ATENDIDA'] : ['EN_ATENCION']);
+                if ($puedeIniciar) {
+                    $citas->orWhere(fn (Builder $programadas) => $programadas->whereDate('fecha', $hoy)->where('estado', 'PROGRAMADA'));
+                }
             })
             ->orderBy('fecha')->orderBy('hora_inicio')->orderBy('id')->get();
 
-        return view('atenciones.index', compact('citas'));
+        return view('atenciones.index', compact('citas', 'puedeConsultar'));
     }
 
-    public function show(Request $request, string $citaId): View
+    public function show(Request $request, string $citaId): View|RedirectResponse
     {
         $medico = $request->user()->medico()->firstOrFail();
         $cita = $medico->citas()->with(['paciente.historiaClinica', 'remision.eps', 'atencion'])->findOrFail($citaId);
+        if ($cita->estado === 'ATENDIDA' && $cita->atencion && $request->user()->can('view', $cita->atencion)) {
+            return redirect()->route('atenciones.clinica.show', $cita->atencion);
+        }
         $atencion = $this->atencionEnCurso($cita, $cita->paciente);
         $errorInicio = null;
         if ($atencion === null) {

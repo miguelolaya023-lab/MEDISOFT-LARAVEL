@@ -25,7 +25,7 @@
                     @can('cancel', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-nav-link>
                     @endcan
-                    @can('startAttendance', \App\Models\Cita::class)
+                    @can('verAgendaClinica', \App\Models\Cita::class)
                     <x-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-nav-link>
                     @endcan
                     @can('viewAny', \App\Models\DisponibilidadMedica::class)
@@ -151,7 +151,7 @@
             @can('cancel', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-responsive-nav-link>
             @endcan
-            @can('startAttendance', \App\Models\Cita::class)
+            @can('verAgendaClinica', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-responsive-nav-link>
             @endcan
             @can('viewAny', \App\Models\DisponibilidadMedica::class)

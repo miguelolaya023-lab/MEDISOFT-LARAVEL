@@ -20,7 +20,17 @@ class AtencionMedica extends Model
 
     protected function casts(): array
     {
-        return ['fecha_hora_inicio' => 'datetime'];
+        return ['fecha_hora_inicio' => 'datetime', 'fecha_hora_fin' => 'datetime'];
+    }
+
+    public function versionClinica(string $campo): string
+    {
+        $texto = $campo === 'cierre'
+            ? [$this->motivo_consulta, $this->diagnostico_principal]
+            : $this->getRawOriginal($campo);
+        $contenido = [$this->getKey(), $campo, $texto];
+
+        return hash_hmac('sha256', json_encode($contenido, JSON_THROW_ON_ERROR), config('app.key'));
     }
 
     public function cita(): BelongsTo
