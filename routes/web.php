@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgendaDiariaController;
 use App\Http\Controllers\AntecedenteClinicoController;
 use App\Http\Controllers\AtencionClinicaController;
 use App\Http\Controllers\AtencionMedicaController;
@@ -38,6 +39,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/cancelar', [CitaCancelacionController::class, 'index'])->can('cancel', Cita::class)->name('citas.cancelar.index');
     Route::get('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'show'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.show');
     Route::patch('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'update'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.update');
+    Route::get('/agenda/diaria', AgendaDiariaController::class)->can('consultarAgendaDiaria', Cita::class)->middleware('cache.headers:no_store;private')->name('agenda.diaria.index');
     Route::get('/atenciones/iniciar', [AtencionMedicaController::class, 'index'])->can('verAgendaClinica', Cita::class)->name('atenciones.index');
     Route::get('/atenciones/{atencion}', [AtencionClinicaController::class, 'show'])->whereNumber('atencion')->can('view', 'atencion')->middleware('cache.headers:no_store;private')->name('atenciones.clinica.show');
     Route::patch('/atenciones/{atencion}/motivo', [AtencionClinicaController::class, 'motivo'])->whereNumber('atencion')->can('registrarMotivo', 'atencion')->name('atenciones.clinica.motivo');

@@ -38,6 +38,17 @@ class CitaPolicy
         return $user->tienePermiso('RF-027');
     }
 
+    public function consultarAgendaDiaria(User $user): bool
+    {
+        return $user->tienePermiso('RF-032');
+    }
+
+    public function consultarAgendaAjena(User $user): bool
+    {
+        return $this->consultarAgendaDiaria($user)
+            && $user->rol()->whereIn('nombre', ['Administrador', 'Administrativo'])->exists();
+    }
+
     public function startAttendance(User $user): bool
     {
         return $user->tienePermiso('RF-028') && $user->medico()->habilitado()->exists();
