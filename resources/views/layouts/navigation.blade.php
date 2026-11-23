@@ -19,6 +19,9 @@
                     @can('createEps', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-nav-link>
                     @endcan
+                    @can('reprogram', \App\Models\Cita::class)
+                    <x-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-nav-link>
+                    @endcan
                     @can('viewAny', \App\Models\DisponibilidadMedica::class)
                     <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
                         Mi disponibilidad
@@ -135,6 +138,9 @@
             @endcan
             @can('createEps', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-responsive-nav-link>
+            @endcan
+            @can('reprogram', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-responsive-nav-link>
             @endcan
             @can('viewAny', \App\Models\DisponibilidadMedica::class)
             <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">

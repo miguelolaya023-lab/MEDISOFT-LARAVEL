@@ -26,4 +26,9 @@ class CitaPolicy
     {
         return $this->createEps($user) && $cita->modalidad === 'EPS' && $cita->created_by === $user->id;
     }
+
+    public function reprogram(User $user): bool
+    {
+        return $user->tienePermiso('RF-026');
+    }
 }

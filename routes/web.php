@@ -3,6 +3,7 @@
 use App\Http\Controllers\AntecedenteClinicoController;
 use App\Http\Controllers\CitaEpsController;
 use App\Http\Controllers\CitaParticularController;
+use App\Http\Controllers\CitaReprogramacionController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
 use App\Http\Controllers\PacienteController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RemisionEpsController;
 use App\Http\Controllers\UserController;
 use App\Models\AntecedenteClinico;
+use App\Models\Cita;
 use App\Models\DisponibilidadMedica;
 use App\Models\Eps;
 use App\Models\Paciente;
@@ -27,6 +29,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/particulares/create', [CitaParticularController::class, 'create'])->name('citas.create');
     Route::post('/citas/particulares', [CitaParticularController::class, 'store'])->name('citas.store');
     Route::get('/citas/{cita}/confirmacion', [CitaParticularController::class, 'confirmation'])->whereNumber('cita')->can('confirm', 'cita')->name('citas.confirmation');
+    Route::get('/citas/reprogramar', [CitaReprogramacionController::class, 'index'])->can('reprogram', Cita::class)->name('citas.reprogramar.index');
+    Route::get('/citas/{citaId}/reprogramar', [CitaReprogramacionController::class, 'edit'])->whereNumber('citaId')->can('reprogram', Cita::class)->name('citas.reprogramar.edit');
+    Route::patch('/citas/{citaId}/reprogramar', [CitaReprogramacionController::class, 'update'])->whereNumber('citaId')->can('reprogram', Cita::class)->name('citas.reprogramar.update');
     Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
     Route::post('/disponibilidad', [DisponibilidadMedicaController::class, 'store'])->name('disponibilidad.store');
     Route::get('/disponibilidad/{disponibilidad}/edit', [DisponibilidadMedicaController::class, 'edit'])->whereNumber('disponibilidad')->can('update', 'disponibilidad')->name('disponibilidad.edit');
