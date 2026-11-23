@@ -33,10 +33,8 @@ class PacienteStateController extends Controller
     }
 
     /**
-     * RN-23: al incorporar AtencionMedica, comprobar EN_CURSO bajo este bloqueo
-     * antes de inactivar. La confirmación ya advierte las citas PROGRAMADAS.
-     * RF-012.1: agenda e inicio de atención deberán bloquear la misma fila y
-     * comprobar ACTIVO antes de escribir; cancelar conservará las citas.
+     * RN-23: el inicio toma un bloqueo sobre este paciente y guarda EN_CURSO
+     * y EN_ATENCION en la misma transacción.
      */
     private function changeState(ChangePacienteStateRequest $request, Paciente $paciente, string $anterior, string $nuevo): RedirectResponse
     {
@@ -45,6 +43,11 @@ class PacienteStateController extends Controller
             if ($paciente->estado !== $anterior) {
                 throw ValidationException::withMessages([
                     'motivo' => 'El estado del paciente ya no permite esta operación. Revise su estado actual.',
+                ]);
+            }
+            if ($nuevo === 'INACTIVO' && $paciente->citas()->where('estado', 'EN_ATENCION')->exists()) {
+                throw ValidationException::withMessages([
+                    'motivo' => 'El paciente tiene una atención en curso y no puede inactivarse.',
                 ]);
             }
             $motivo = $request->validated('motivo');

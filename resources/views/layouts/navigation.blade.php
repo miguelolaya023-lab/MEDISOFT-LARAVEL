@@ -25,6 +25,9 @@
                     @can('cancel', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-nav-link>
                     @endcan
+                    @can('startAttendance', \App\Models\Cita::class)
+                    <x-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-nav-link>
+                    @endcan
                     @can('viewAny', \App\Models\DisponibilidadMedica::class)
                     <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
                         Mi disponibilidad
@@ -147,6 +150,9 @@
             @endcan
             @can('cancel', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-responsive-nav-link>
+            @endcan
+            @can('startAttendance', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-responsive-nav-link>
             @endcan
             @can('viewAny', \App\Models\DisponibilidadMedica::class)
             <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">

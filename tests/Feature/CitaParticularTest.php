@@ -149,7 +149,7 @@ class CitaParticularTest extends TestCase
         $this->assertSame('PROGRAMADA', $cita->estado);
         $this->assertSame('120000.50', (string) $cita->valor_base);
         $this->assertSame($actor->id, $cita->created_by);
-        $this->assertFalse(Schema::hasTable('atenciones_medicas'));
+        $this->assertDatabaseCount('atenciones_medicas', 0);
         $this->assertFalse(Schema::hasTable('pagos_particulares'));
 
         $auditoria = Auditoria::query()->sole();
