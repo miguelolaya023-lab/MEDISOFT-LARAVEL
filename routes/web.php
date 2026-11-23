@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\CitaCancelacionController;
 use App\Http\Controllers\CitaEpsController;
 use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\CitaReprogramacionController;
@@ -32,6 +33,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/reprogramar', [CitaReprogramacionController::class, 'index'])->can('reprogram', Cita::class)->name('citas.reprogramar.index');
     Route::get('/citas/{citaId}/reprogramar', [CitaReprogramacionController::class, 'edit'])->whereNumber('citaId')->can('reprogram', Cita::class)->name('citas.reprogramar.edit');
     Route::patch('/citas/{citaId}/reprogramar', [CitaReprogramacionController::class, 'update'])->whereNumber('citaId')->can('reprogram', Cita::class)->name('citas.reprogramar.update');
+    Route::get('/citas/cancelar', [CitaCancelacionController::class, 'index'])->can('cancel', Cita::class)->name('citas.cancelar.index');
+    Route::get('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'show'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.show');
+    Route::patch('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'update'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.update');
     Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
     Route::post('/disponibilidad', [DisponibilidadMedicaController::class, 'store'])->name('disponibilidad.store');
     Route::get('/disponibilidad/{disponibilidad}/edit', [DisponibilidadMedicaController::class, 'edit'])->whereNumber('disponibilidad')->can('update', 'disponibilidad')->name('disponibilidad.edit');

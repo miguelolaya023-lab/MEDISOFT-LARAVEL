@@ -31,4 +31,9 @@ class CitaPolicy
     {
         return $user->tienePermiso('RF-026');
     }
+
+    public function cancel(User $user): bool
+    {
+        return $user->tienePermiso('RF-027');
+    }
 }
