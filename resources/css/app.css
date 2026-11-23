@@ -1,3 +1,353 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .med-shell,
+    .med-login-page {
+        --med-canvas: #f6f4fa;
+        --med-border: #e9e3f2;
+        --med-accent: #6334bd;
+        --med-violet-surface: radial-gradient(ellipse at 98% 10%, #693ba9, transparent 66%), linear-gradient(120deg, #261644, #40266b);
+        background-color: var(--med-canvas);
+    }
+
+    .med-login-page {
+        @apply grid min-h-screen place-items-center;
+        --med-login-field-border: #8e80a7;
+        min-height: 100dvh;
+        background-image: radial-gradient(ellipse at 50% 12%, #ebe4f8, transparent 65%);
+    }
+
+    .med-login-card {
+        border-color: var(--med-border);
+        box-shadow: 0 16px 48px #39215d14;
+    }
+
+    .med-login-brand {
+        @apply text-white;
+        background: var(--med-violet-surface);
+    }
+
+    .med-login-orbit {
+        @apply pointer-events-none absolute right-0 top-1/2 size-48 -translate-y-1/2 translate-x-1/4 rounded-full border border-violet-200/25 md:top-auto md:bottom-0 md:size-72 md:translate-y-1/3;
+        box-shadow: 0 0 0 20px #d8bcff12, 0 0 0 42px #d8bcff0b;
+    }
+
+    .med-login-page .med-login-input {
+        @apply min-h-11 rounded-lg text-base text-slate-900 shadow-none;
+        border-color: var(--med-login-field-border);
+    }
+
+    .med-login-page .med-login-input:focus {
+        @apply border-violet-700 ring-violet-700;
+    }
+
+    .med-login-page .med-login-input[aria-invalid='true']:not(:focus) {
+        @apply border-red-600;
+    }
+
+    .med-login-remember {
+        @apply rounded text-violet-700 focus:ring-violet-700;
+        border-color: var(--med-login-field-border);
+    }
+
+    .med-login-recovery {
+        @apply text-violet-800 underline decoration-violet-300 underline-offset-4 hover:text-violet-950 hover:decoration-violet-950;
+    }
+
+    .med-login-submit {
+        @apply bg-violet-700 text-white transition-colors hover:bg-violet-800 active:bg-violet-900;
+    }
+
+    .med-skip-link {
+        @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-semibold;
+    }
+
+    .med-topbar {
+        @apply border-b bg-white;
+        border-color: var(--med-border);
+    }
+
+    .med-topbar-inner {
+        @apply mx-auto flex min-h-[4.5rem] max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8;
+    }
+
+    .med-topbar-brand {
+        @apply block text-[0.65rem] font-semibold tracking-[0.17em];
+        color: var(--med-accent);
+    }
+
+    .med-screen-title {
+        @apply text-base font-semibold text-slate-900;
+    }
+
+    .med-icon-button {
+        @apply inline-flex size-10 shrink-0 items-center justify-center rounded-lg;
+    }
+
+    .med-drawer-toggle {
+        @apply hidden bg-violet-50 text-violet-800 hover:bg-violet-100;
+    }
+
+    .med-account {
+        @apply relative shrink-0;
+    }
+
+    .med-account-trigger {
+        @apply flex cursor-pointer list-none items-center gap-2 rounded-xl border border-transparent p-1.5 text-sm font-semibold text-slate-800 hover:border-violet-200 hover:bg-violet-50;
+    }
+
+    .med-account[open] .med-account-trigger {
+        @apply border-violet-200 bg-violet-50;
+    }
+
+    .med-account-trigger::-webkit-details-marker {
+        display: none;
+    }
+
+    .med-avatar {
+        @apply flex size-8 items-center justify-center rounded-lg bg-violet-100 font-semibold text-violet-800;
+    }
+
+    .med-account-chevron {
+        @apply size-4 text-violet-700;
+    }
+
+    .med-account-panel {
+        @apply absolute right-0 z-20 mt-2 w-52 max-w-[calc(100vw-2rem)] rounded-xl border bg-white p-1.5 shadow-lg;
+        border-color: var(--med-border);
+    }
+
+    .med-account-action {
+        @apply flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-900;
+    }
+
+    .med-sidebar {
+        @apply flex min-w-0 flex-col text-white;
+        background: linear-gradient(165deg, #21143e, #302059 75%, #382468);
+    }
+
+    .med-sidebar-head,
+    .med-sidebar-footer {
+        @apply shrink-0 border-white/15 p-4;
+    }
+
+    .med-sidebar-head {
+        @apply flex items-center justify-between gap-2 border-b;
+    }
+
+    .med-sidebar-footer {
+        @apply border-t;
+    }
+
+    .med-sidebar-brand {
+        @apply flex min-w-0 items-center gap-3 rounded-lg;
+    }
+
+    .med-sidebar-mark {
+        @apply flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white;
+    }
+
+    .med-drawer-close {
+        @apply hidden hover:bg-white/15;
+    }
+
+    .med-sidebar-scroll {
+        @apply min-h-0 flex-1 px-3 py-4;
+        scrollbar-width: thin;
+        scrollbar-color: #a889db #2d1d52;
+    }
+
+    .med-nav-group {
+        @apply mt-3 border-t border-white/15 pt-3;
+    }
+
+    .med-nav-label {
+        @apply mb-1.5 px-3 text-[0.6875rem] font-semibold uppercase tracking-[0.13em] text-violet-200;
+    }
+
+    .med-nav-link {
+        @apply flex min-h-9 items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium leading-snug text-violet-50 transition-colors hover:bg-white/15 hover:text-white;
+    }
+
+    .med-nav-link--child {
+        @apply relative pl-[3.25rem] text-[0.8125rem] text-violet-100;
+    }
+
+    .med-nav-link--child::before {
+        @apply absolute bottom-0 top-0 left-[1.375rem] w-px bg-violet-200/25;
+        content: '';
+    }
+
+    .med-nav-link--child::after {
+        @apply absolute top-1/2 left-[1.375rem] h-px w-3 bg-violet-200/25;
+        content: '';
+    }
+
+    .med-nav-link[aria-current='page'] {
+        @apply bg-[#59399a] font-semibold text-white hover:bg-[#6342a4];
+        box-shadow: inset 3px 0 #c9afff;
+    }
+
+    .med-hero {
+        background: var(--med-violet-surface);
+        animation: med-hero-in 280ms ease-out both;
+    }
+
+    .med-hero-art {
+        @apply pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] items-center justify-center opacity-85 sm:flex;
+    }
+
+    .med-hero-orbit {
+        @apply absolute size-[23rem] rounded-full border border-violet-200/25;
+        transform: translate(12%, 5%);
+        box-shadow: 0 0 0 24px #d8bcff12, 0 0 0 52px #d8bcff0b, 0 0 0 82px #d8bcff07;
+    }
+
+    .med-hero-emblem {
+        @apply relative flex size-28 items-center justify-center rounded-[2rem] border border-white/25 bg-white/10 text-violet-100 shadow-xl lg:size-36;
+        transform: rotate(-12deg);
+    }
+
+    .med-hero-action {
+        @apply bg-white text-violet-900 transition-colors hover:bg-violet-100;
+    }
+
+    .med-shortcut {
+        border-color: var(--med-border);
+        box-shadow: 0 2px 3px #28164a05;
+        transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
+    }
+
+    .med-shortcut:hover {
+        transform: translateY(-2px);
+        border-color: #cbb7ef;
+        box-shadow: 0 8px 22px #39215d12;
+    }
+
+    .med-shortcut-icon {
+        @apply bg-violet-100 text-violet-800;
+    }
+
+    .med-shortcut-arrow {
+        @apply text-violet-700 transition-transform group-hover:translate-x-0.5;
+    }
+
+    .med-login-recovery:focus-visible,
+    .med-login-submit:focus-visible,
+    .med-topbar :focus-visible,
+    .med-shortcut:focus-visible {
+        outline: 2px solid var(--med-accent);
+        outline-offset: 3px;
+    }
+
+    .med-login-brand a:focus-visible,
+    .med-sidebar :focus-visible,
+    .med-hero-action:focus-visible {
+        outline: 2px solid #e6d7ff;
+        outline-offset: 2px;
+    }
+
+    .med-drawer {
+        position: fixed;
+        inset: 0 auto 0 0;
+        margin: 0;
+        width: min(18rem, 88vw);
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        padding: 0;
+        background: transparent;
+    }
+
+    .med-drawer[open] {
+        animation: med-drawer-in 190ms ease-out both;
+    }
+
+    .med-drawer::backdrop {
+        background: #160d29a8;
+        animation: med-backdrop-in 190ms ease-out both;
+    }
+
+    .med-drawer .med-sidebar {
+        height: 100%;
+    }
+
+    .med-drawer .med-sidebar-scroll {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .med-drawer .med-drawer-close {
+        display: inline-flex;
+    }
+
+    body:has(.med-drawer[open]) {
+        overflow: hidden;
+    }
+
+    @media (max-width: 63.999rem) {
+        .med-shell[data-shell-ready] > .med-sidebar {
+            display: none;
+        }
+
+        .med-shell[data-shell-ready] .med-drawer-toggle {
+            display: inline-flex;
+        }
+    }
+
+    @media (min-width: 64rem) {
+        .med-shell {
+            display: grid;
+            grid-template-columns: 16rem minmax(0, 1fr);
+        }
+
+        .med-shell > .med-sidebar {
+            position: sticky;
+            top: 0;
+            height: 100dvh;
+        }
+
+        .med-sidebar-scroll {
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .med-hero,
+        .med-drawer[open],
+        .med-drawer::backdrop {
+            animation: none;
+        }
+
+        .med-shortcut,
+        .med-shortcut-arrow,
+        .med-nav-link,
+        .med-login-submit,
+        .med-hero-action {
+            transition: none;
+        }
+
+        .med-shortcut:hover,
+        .med-shortcut:hover .med-shortcut-arrow {
+            transform: none;
+        }
+    }
+}
+
+@keyframes med-hero-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes med-drawer-in {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes med-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

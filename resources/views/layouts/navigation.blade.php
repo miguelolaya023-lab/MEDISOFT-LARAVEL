@@ -1,225 +1,118 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 text-teal-700">
-                        <x-application-logo class="block h-9 w-auto fill-current" />
-                        <span class="text-lg font-semibold text-gray-900">MEDISOFT</span>
-                    </a>
-                </div>
-
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        Panel
-                    </x-nav-link>
-                    @can('create', \App\Models\Cita::class)
-                    <x-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.create', 'citas.confirmation')">Agendar particular</x-nav-link>
-                    @endcan
-                    @can('createEps', \App\Models\Cita::class)
-                    <x-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-nav-link>
-                    @endcan
-                    @can('consultarAgendaDiaria', \App\Models\Cita::class)
-                    <x-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-nav-link>
-                    @endcan
-                    @can('notificarCita', \App\Models\Cita::class)
-                    <x-nav-link :href="route('notificaciones.citas.index')" :active="request()->routeIs('notificaciones.citas.*')">Notificaciones de citas</x-nav-link>
-                    @endcan
-                    @can('reprogram', \App\Models\Cita::class)
-                    <x-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-nav-link>
-                    @endcan
-                    @can('cancel', \App\Models\Cita::class)
-                    <x-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-nav-link>
-                    @endcan
-                    @can('verAgendaClinica', \App\Models\Cita::class)
-                    <x-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-nav-link>
-                    @endcan
-                    @can('viewAny', \App\Models\DisponibilidadMedica::class)
-                    <x-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
-                        Mi disponibilidad
-                    </x-nav-link>
-                    @endcan
-                    @can('viewAny', \App\Models\User::class)
-                    <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
-                        Usuarios
-                    </x-nav-link>
-                    @endcan
-                    @canany(['viewAny', 'search', 'create'], \App\Models\Paciente::class)
-                    <div class="flex items-center">
-                        <x-dropdown align="left" width="48">
-                            <x-slot name="trigger">
-                                <button type="button" class="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600">
-                                    Pacientes <span aria-hidden="true">▾</span>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                @can('viewAny', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.index')">Listar pacientes</x-dropdown-link>@endcan
-                                @can('search', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.search')">Consultar paciente</x-dropdown-link>@endcan
-                                @can('create', \App\Models\Paciente::class)<x-dropdown-link :href="route('pacientes.create')">Registrar paciente</x-dropdown-link>@endcan
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                    @endcanany
-                    @canany(['viewAny', 'search', 'create'], \App\Models\Eps::class)
-                    <div class="flex items-center">
-                        <x-dropdown align="left" width="48">
-                            <x-slot name="trigger">
-                                <button type="button" class="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600">EPS <span aria-hidden="true">▾</span></button>
-                            </x-slot>
-                            <x-slot name="content">
-                                @can('viewAny', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.index')">Listar EPS</x-dropdown-link>@endcan
-                                @can('search', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.search')">Consultar EPS</x-dropdown-link>@endcan
-                                @can('create', \App\Models\Eps::class)<x-dropdown-link :href="route('eps.create')">Registrar EPS</x-dropdown-link>@endcan
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                    @endcanany
-                    @canany(['viewAny', 'search', 'create'], \App\Models\RemisionEps::class)
-                    <div class="flex items-center">
-                        <x-dropdown align="left" width="48">
-                            <x-slot name="trigger"><button type="button" class="text-sm font-medium text-gray-600 hover:text-teal-700">Remisiones <span aria-hidden="true">▾</span></button></x-slot>
-                            <x-slot name="content">
-                                @can('viewAny', \App\Models\RemisionEps::class)<x-dropdown-link :href="route('remisiones.index')">Listar remisiones</x-dropdown-link>@endcan
-                                @can('search', \App\Models\RemisionEps::class)<x-dropdown-link :href="route('remisiones.search')">Consultar remisiones</x-dropdown-link>@endcan
-                                @can('create', \App\Models\RemisionEps::class)<x-dropdown-link :href="route('remisiones.create')">Registrar remisión</x-dropdown-link>@endcan
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                    @endcanany
-                </div>
-            </div>
-
-            <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-4">
-                <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
-                    @csrf
-
-                    <button type="submit" class="inline-flex items-center rounded-md border border-teal-700 px-3 py-2 text-sm font-medium text-teal-700 transition duration-150 ease-in-out hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">
-                        Cerrar sesión
-                    </button>
-                </form>
-
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            Perfil
-                        </x-dropdown-link>
-
-                        <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
-                            @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').requestSubmit();">
-                                Cerrar sesión
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+<aside id="medisoft-navigation" class="med-sidebar" x-ref="sidebar">
+    <div class="med-sidebar-head">
+        <a href="{{ route('dashboard') }}" class="med-sidebar-brand">
+            <span class="med-sidebar-mark"><x-application-logo class="size-7 fill-current" /></span>
+            <span>
+                <span class="block text-lg font-semibold tracking-tight">MEDISOFT</span>
+                <span class="block text-xs text-violet-200">Gestión del consultorio</span>
+            </span>
+        </a>
+        <button type="button" class="med-drawer-close med-icon-button" aria-label="Cerrar navegación" autofocus @click="closeDrawer">
+            <x-shell-icon name="close" />
+        </button>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                Panel
-            </x-responsive-nav-link>
-            @can('create', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('citas.create')" :active="request()->routeIs('citas.create', 'citas.confirmation')">Agendar particular</x-responsive-nav-link>
-            @endcan
-            @can('createEps', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-responsive-nav-link>
-            @endcan
-            @can('consultarAgendaDiaria', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-responsive-nav-link>
-            @endcan
-            @can('notificarCita', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('notificaciones.citas.index')" :active="request()->routeIs('notificaciones.citas.*')">Notificaciones de citas</x-responsive-nav-link>
-            @endcan
-            @can('reprogram', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-responsive-nav-link>
-            @endcan
-            @can('cancel', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-responsive-nav-link>
-            @endcan
-            @can('verAgendaClinica', \App\Models\Cita::class)
-            <x-responsive-nav-link :href="route('atenciones.index')" :active="request()->routeIs('atenciones.*')">Atención médica</x-responsive-nav-link>
-            @endcan
-            @can('viewAny', \App\Models\DisponibilidadMedica::class)
-            <x-responsive-nav-link :href="route('disponibilidad.index')" :active="request()->routeIs('disponibilidad.*')">
-                Mi disponibilidad
-            </x-responsive-nav-link>
-            @endcan
-            @can('viewAny', \App\Models\User::class)
-            <x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
-                Usuarios
-            </x-responsive-nav-link>
-            @endcan
-            @can('viewAny', \App\Models\Paciente::class)
-            <x-responsive-nav-link :href="route('pacientes.index')" :active="request()->routeIs('pacientes.index')">
-                Pacientes
-            </x-responsive-nav-link>
-            @endcan
-            @can('search', \App\Models\Paciente::class)
-            <x-responsive-nav-link :href="route('pacientes.search')" :active="request()->routeIs('pacientes.search', 'pacientes.show')">
-                Consultar paciente
-            </x-responsive-nav-link>
-            @endcan
-            @can('create', \App\Models\Paciente::class)
-            <x-responsive-nav-link :href="route('pacientes.create')" :active="request()->routeIs('pacientes.create')">
-                Registrar paciente
-            </x-responsive-nav-link>
-            @endcan
-            @can('viewAny', \App\Models\RemisionEps::class)<x-responsive-nav-link :href="route('remisiones.index')">Listar remisiones</x-responsive-nav-link>@endcan
-            @can('search', \App\Models\RemisionEps::class)<x-responsive-nav-link :href="route('remisiones.search')">Consultar remisiones</x-responsive-nav-link>@endcan
-            @can('create', \App\Models\RemisionEps::class)<x-responsive-nav-link :href="route('remisiones.create')">Registrar remisión</x-responsive-nav-link>@endcan
-            @can('viewAny', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.index')" :active="request()->routeIs('eps.index')">Listar EPS</x-responsive-nav-link>@endcan
-            @can('search', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.search')" :active="request()->routeIs('eps.search', 'eps.show')">Consultar EPS</x-responsive-nav-link>@endcan
-            @can('create', \App\Models\Eps::class)<x-responsive-nav-link :href="route('eps.create')" :active="request()->routeIs('eps.create')">Registrar EPS</x-responsive-nav-link>@endcan
-        </div>
+    <nav aria-label="Navegación principal" class="med-sidebar-scroll">
+        <x-shell-link :href="route('dashboard')" icon="home" :active="request()->routeIs('dashboard')">Inicio</x-shell-link>
 
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+        @canany(['consultarAgendaDiaria', 'create', 'createEps', 'reprogram', 'cancel', 'notificarCita'], \App\Models\Cita::class)
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-agenda">
+                <p id="med-nav-agenda" class="med-nav-label">Agenda y citas</p>
+                @can('consultarAgendaDiaria', \App\Models\Cita::class)
+                    <x-shell-link :href="route('agenda.diaria.index')" icon="calendar" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-shell-link>
+                @endcan
+                @can('create', \App\Models\Cita::class)
+                    <x-shell-link :href="route('citas.create')" :active="request()->routeIs('citas.create', 'citas.confirmation')">Agendar particular</x-shell-link>
+                @endcan
+                @can('createEps', \App\Models\Cita::class)
+                    <x-shell-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-shell-link>
+                @endcan
+                @can('reprogram', \App\Models\Cita::class)
+                    <x-shell-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-shell-link>
+                @endcan
+                @can('cancel', \App\Models\Cita::class)
+                    <x-shell-link :href="route('citas.cancelar.index')" :active="request()->routeIs('citas.cancelar.*')">Cancelar cita</x-shell-link>
+                @endcan
+                @can('notificarCita', \App\Models\Cita::class)
+                    <x-shell-link :href="route('notificaciones.citas.index')" icon="message" :active="request()->routeIs('notificaciones.citas.*')">Notificaciones de citas</x-shell-link>
+                @endcan
             </div>
+        @endcanany
 
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    Perfil
-                </x-responsive-nav-link>
-
-                <form method="POST" action="{{ route('logout') }}" x-on:submit="if (! window.confirm('¿Cerrar sesión?')) $event.preventDefault()">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').requestSubmit();">
-                        Cerrar sesión
-                    </x-responsive-nav-link>
-                </form>
+        @canany(['viewAny', 'search', 'create'], \App\Models\Paciente::class)
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-patients">
+                <p id="med-nav-patients" class="med-nav-label">Pacientes</p>
+                @can('viewAny', \App\Models\Paciente::class)
+                    <x-shell-link :href="route('pacientes.index')" icon="people" :active="request()->routeIs('pacientes.index')">Listar pacientes</x-shell-link>
+                @endcan
+                @can('search', \App\Models\Paciente::class)
+                    <x-shell-link :href="route('pacientes.search')" :active="request()->routeIs('pacientes.search', 'pacientes.show', 'pacientes.edit', 'pacientes.state', 'antecedentes.*')">Consultar paciente</x-shell-link>
+                @endcan
+                @can('create', \App\Models\Paciente::class)
+                    <x-shell-link :href="route('pacientes.create')" :active="request()->routeIs('pacientes.create')">Registrar paciente</x-shell-link>
+                @endcan
             </div>
-        </div>
+        @endcanany
+
+        @if (Gate::allows('verAgendaClinica', \App\Models\Cita::class) || Gate::allows('viewAny', \App\Models\DisponibilidadMedica::class))
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-clinical">
+                <p id="med-nav-clinical" class="med-nav-label">Área clínica</p>
+                @can('verAgendaClinica', \App\Models\Cita::class)
+                    <x-shell-link :href="route('atenciones.index')" icon="clinical" :active="request()->routeIs('atenciones.*')">Atención médica</x-shell-link>
+                @endcan
+                @can('viewAny', \App\Models\DisponibilidadMedica::class)
+                    <x-shell-link :href="route('disponibilidad.index')" icon="clock" :active="request()->routeIs('disponibilidad.*')">Mi disponibilidad</x-shell-link>
+                @endcan
+            </div>
+        @endif
+
+        @canany(['viewAny', 'search', 'create'], \App\Models\Eps::class)
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-eps">
+                <p id="med-nav-eps" class="med-nav-label">EPS</p>
+                @can('viewAny', \App\Models\Eps::class)
+                    <x-shell-link :href="route('eps.index')" icon="shield" :active="request()->routeIs('eps.index')">Listar EPS</x-shell-link>
+                @endcan
+                @can('search', \App\Models\Eps::class)
+                    <x-shell-link :href="route('eps.search')" :active="request()->routeIs('eps.search', 'eps.show', 'eps.edit')">Consultar EPS</x-shell-link>
+                @endcan
+                @can('create', \App\Models\Eps::class)
+                    <x-shell-link :href="route('eps.create')" :active="request()->routeIs('eps.create')">Registrar EPS</x-shell-link>
+                @endcan
+            </div>
+        @endcanany
+
+        @canany(['viewAny', 'search', 'create'], \App\Models\RemisionEps::class)
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-referrals">
+                <p id="med-nav-referrals" class="med-nav-label">Remisiones</p>
+                @can('viewAny', \App\Models\RemisionEps::class)
+                    <x-shell-link :href="route('remisiones.index')" icon="document" :active="request()->routeIs('remisiones.index')">Listar remisiones</x-shell-link>
+                @endcan
+                @can('search', \App\Models\RemisionEps::class)
+                    <x-shell-link :href="route('remisiones.search')" :active="request()->routeIs('remisiones.search', 'remisiones.show', 'remisiones.edit', 'remisiones.state')">Consultar remisiones</x-shell-link>
+                @endcan
+                @can('create', \App\Models\RemisionEps::class)
+                    <x-shell-link :href="route('remisiones.create')" :active="request()->routeIs('remisiones.create')">Registrar remisión</x-shell-link>
+                @endcan
+            </div>
+        @endcanany
+
+        @can('viewAny', \App\Models\User::class)
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-admin">
+                <p id="med-nav-admin" class="med-nav-label">Administración</p>
+                <x-shell-link :href="route('usuarios.index')" icon="people" :active="request()->routeIs('usuarios.*')">Usuarios</x-shell-link>
+            </div>
+        @endcan
+    </nav>
+
+    <div class="med-sidebar-footer">
+        <x-shell-link :href="route('profile.edit')" icon="profile" :active="request()->routeIs('profile.edit')">Perfil</x-shell-link>
+        <form method="POST" action="{{ route('logout') }}" onsubmit="return window.confirm('¿Cerrar sesión?')">
+            @csrf
+            <button type="submit" class="med-nav-link w-full text-left">
+                <x-shell-icon name="logout" /> Cerrar sesión
+            </button>
+        </form>
     </div>
-</nav>
+</aside>
+<dialog class="med-drawer" x-ref="drawer" aria-label="Navegación de MEDISOFT"
+    @click.self="closeDrawer" @cancel.prevent="closeDrawer"></dialog>
