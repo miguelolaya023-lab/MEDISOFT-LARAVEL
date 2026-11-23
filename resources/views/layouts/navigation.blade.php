@@ -19,6 +19,9 @@
                     @can('createEps', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-nav-link>
                     @endcan
+                    @can('consultarAgendaDiaria', \App\Models\Cita::class)
+                    <x-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-nav-link>
+                    @endcan
                     @can('reprogram', \App\Models\Cita::class)
                     <x-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-nav-link>
                     @endcan
@@ -144,6 +147,9 @@
             @endcan
             @can('createEps', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.eps.create')" :active="request()->routeIs('citas.eps.*')">Agendar EPS</x-responsive-nav-link>
+            @endcan
+            @can('consultarAgendaDiaria', \App\Models\Cita::class)
+            <x-responsive-nav-link :href="route('agenda.diaria.index')" :active="request()->routeIs('agenda.diaria.index')">Agenda diaria</x-responsive-nav-link>
             @endcan
             @can('reprogram', \App\Models\Cita::class)
             <x-responsive-nav-link :href="route('citas.reprogramar.index')" :active="request()->routeIs('citas.reprogramar.*')">Reprogramar</x-responsive-nav-link>
