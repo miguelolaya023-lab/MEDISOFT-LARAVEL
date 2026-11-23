@@ -6,7 +6,6 @@ use App\Http\Requests\ChangeRemisionStateRequest;
 use App\Http\Requests\QueryRemisionRequest;
 use App\Http\Requests\SaveRemisionRequest;
 use App\Models\Auditoria;
-use App\Models\CambioEstadoRemision;
 use App\Models\Eps;
 use App\Models\Paciente;
 use App\Models\RemisionEps;
@@ -141,7 +140,7 @@ class RemisionEpsController extends Controller
             $remision->fill(Arr::except($data, 'motivo'));
             $remision->estado = $nuevo;
             if ($anterior === 'VENCIDA' && $nuevo === 'VIGENTE') {
-                $this->recordState($remision, $request->user()->id, $anterior, $nuevo, $data['motivo']);
+                $remision->registrarCambioEstado($request->user()->id, $anterior, $nuevo, $data['motivo'], now());
             }
             $remision->save();
             $this->audit($request->user()->id, $remision, 'REMISION_ACTUALIZADA', 'Datos permitidos actualizados; estado '.$nuevo.'.');
@@ -167,19 +166,13 @@ class RemisionEpsController extends Controller
             if ($remision->citas()->ocupaHorario()->exists()) {
                 throw ValidationException::withMessages(['estado' => 'No se puede anular una remisión con una cita EPS no cancelada.']);
             }
-            $this->recordState($remision, $request->user()->id, $anterior, 'ANULADA', $request->validated('motivo'));
+            $remision->registrarCambioEstado($request->user()->id, $anterior, 'ANULADA', $request->validated('motivo'), now());
             $remision->estado = 'ANULADA';
             $remision->save();
             $this->audit($request->user()->id, $remision, 'REMISION_ANULADA', 'Cambio de estado '.$anterior.' -> ANULADA.');
         });
 
         return redirect($request->user()->can('view', $remision) ? route('remisiones.show', $remision) : route('remisiones.state', $remision))->with('status', 'Remisión anulada correctamente.');
-    }
-
-    private function recordState(RemisionEps $remision, int $responsable, string $anterior, string $nuevo, string $motivo): void
-    {
-        $remision->motivo_cambio_estado = $motivo;
-        CambioEstadoRemision::query()->create(['remision_id' => $remision->id, 'user_id' => $responsable, 'estado_anterior' => $anterior, 'estado_nuevo' => $nuevo, 'motivo' => $motivo, 'fecha_cambio' => now()]);
     }
 
     private function audit(int $responsable, RemisionEps $remision, string $accion, string $resumen): void

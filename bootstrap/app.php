@@ -19,9 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['active' => EnsureUserIsActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['motivo_consulta']);
+        $exceptions->dontFlash(['motivo_consulta', 'diagnostico_principal', 'observacion_final']);
         $esFalloSqlClinico = static function (Throwable $exception, Request $request): bool {
-            if (! $request->routeIs('antecedentes.index', 'antecedentes.store', 'antecedentes.edit', 'antecedentes.update')) {
+            if (! $request->routeIs('antecedentes.index', 'antecedentes.store', 'antecedentes.edit', 'antecedentes.update', 'atenciones.clinica.*')) {
                 return false;
             }
             do {
@@ -38,8 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if (! $esFalloSqlClinico($exception, request())) {
                 return null;
             }
-            Log::error('Error de base de datos en RF-058.', [
-                'modulo' => 'RF-058', 'operacion' => request()->route()->getName(),
+            $modulo = request()->routeIs('atenciones.clinica.*') ? 'AtencionMedica' : 'RF-058';
+            Log::error('Error de base de datos en '.$modulo.'.', [
+                'modulo' => $modulo, 'operacion' => request()->route()->getName(),
             ]);
 
             return false;
@@ -49,7 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if (! $esFalloSqlClinico($exception, $request)) {
                 return null;
             }
-            $mensaje = 'No fue posible completar la operación de antecedentes clínicos. Intente nuevamente.';
+            $mensaje = $request->routeIs('atenciones.clinica.*')
+                ? 'No fue posible completar la operación de atención médica. Intente nuevamente.'
+                : 'No fue posible completar la operación de antecedentes clínicos. Intente nuevamente.';
             $response = $request->expectsJson()
                 ? response()->json(['message' => $mensaje], 503)
                 : response($mensaje, 503)->header('Content-Type', 'text/plain; charset=UTF-8');

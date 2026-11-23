@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AntecedenteClinicoController;
+use App\Http\Controllers\AtencionClinicaController;
 use App\Http\Controllers\AtencionMedicaController;
 use App\Http\Controllers\CitaCancelacionController;
 use App\Http\Controllers\CitaEpsController;
@@ -37,8 +38,12 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/cancelar', [CitaCancelacionController::class, 'index'])->can('cancel', Cita::class)->name('citas.cancelar.index');
     Route::get('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'show'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.show');
     Route::patch('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'update'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.update');
-    Route::get('/atenciones/iniciar', [AtencionMedicaController::class, 'index'])->can('startAttendance', Cita::class)->name('atenciones.index');
-    Route::get('/citas/{citaId}/atencion', [AtencionMedicaController::class, 'show'])->whereNumber('citaId')->can('startAttendance', Cita::class)->name('atenciones.show');
+    Route::get('/atenciones/iniciar', [AtencionMedicaController::class, 'index'])->can('verAgendaClinica', Cita::class)->name('atenciones.index');
+    Route::get('/atenciones/{atencion}', [AtencionClinicaController::class, 'show'])->whereNumber('atencion')->can('view', 'atencion')->middleware('cache.headers:no_store;private')->name('atenciones.clinica.show');
+    Route::patch('/atenciones/{atencion}/motivo', [AtencionClinicaController::class, 'motivo'])->whereNumber('atencion')->can('registrarMotivo', 'atencion')->name('atenciones.clinica.motivo');
+    Route::patch('/atenciones/{atencion}/diagnostico', [AtencionClinicaController::class, 'diagnostico'])->whereNumber('atencion')->can('registrarDiagnostico', 'atencion')->name('atenciones.clinica.diagnostico');
+    Route::post('/atenciones/{atencion}/finalizar', [AtencionClinicaController::class, 'finalizar'])->whereNumber('atencion')->can('finalizar', 'atencion')->name('atenciones.clinica.finalizar');
+    Route::get('/citas/{citaId}/atencion', [AtencionMedicaController::class, 'show'])->whereNumber('citaId')->can('startAttendance', Cita::class)->middleware('cache.headers:no_store;private')->name('atenciones.show');
     Route::post('/citas/{citaId}/atencion', [AtencionMedicaController::class, 'store'])->whereNumber('citaId')->can('startAttendance', Cita::class)->name('atenciones.store');
     Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
     Route::post('/disponibilidad', [DisponibilidadMedicaController::class, 'store'])->name('disponibilidad.store');

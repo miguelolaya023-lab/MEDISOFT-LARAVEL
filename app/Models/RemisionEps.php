@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Database\Factories\RemisionEpsFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 
 class RemisionEps extends Model
 {
@@ -30,9 +32,19 @@ class RemisionEps extends Model
         return now('America/Bogota')->toDateString();
     }
 
-    public function estadoActual(): string
+    public function estadoActual(?string $fecha = null): string
     {
-        return $this->estado === 'VIGENTE' && $this->vigencia_hasta->toDateString() < self::hoy() ? 'VENCIDA' : $this->estado;
+        return $this->estado === 'VIGENTE' && $this->vigencia_hasta->toDateString() < ($fecha ?? self::hoy()) ? 'VENCIDA' : $this->estado;
+    }
+
+    public function registrarCambioEstado(int $responsable, string $anterior, string $nuevo, string $motivo, CarbonInterface $fecha): void
+    {
+        $this->motivo_cambio_estado = $motivo;
+        $cambio = $this->cambiosEstado()->create([
+            'user_id' => $responsable, 'estado_anterior' => $anterior, 'estado_nuevo' => $nuevo,
+            'motivo' => $motivo, 'fecha_cambio' => $fecha,
+        ]);
+        throw_unless($cambio->exists, RuntimeException::class, 'No se pudo registrar la trazabilidad de la remisión.');
     }
 
     public function scopeConEstado(Builder $query, string $estado): void

@@ -18,6 +18,11 @@
                         <div><dt class="font-medium">Historia clínica vinculada</dt><dd>#{{ $atencion->historia_clinica_id }}</dd></div>
                     @endif
                 </dl>
+                @if ($atencion)
+                    @can('view', $atencion)
+                        @include('atenciones.campos-clinicos')
+                    @endcan
+                @endif
                 @if ($errorInicio)
                     @if (! $errors->has('cita'))
                         <x-input-error :messages="[$errorInicio]" />
