@@ -54,11 +54,17 @@
             </div>
         @endcanany
 
-        @if (Gate::allows('verAgendaClinica', \App\Models\Cita::class) || Gate::allows('viewAny', \App\Models\DisponibilidadMedica::class))
+        @if (Gate::allows('verAgendaClinica', \App\Models\Cita::class) || Gate::allows('viewAny', \App\Models\DisponibilidadMedica::class) || Gate::allows('listarTratamientos', \App\Models\AtencionMedica::class) || Gate::allows('listarFormulasMedicas', \App\Models\AtencionMedica::class))
             <div class="med-nav-group" role="group" aria-labelledby="med-nav-clinical">
                 <p id="med-nav-clinical" class="med-nav-label">Área clínica</p>
                 @can('verAgendaClinica', \App\Models\Cita::class)
-                    <x-shell-link :href="route('atenciones.index')" icon="clinical" :active="request()->routeIs('atenciones.*')">Atención médica</x-shell-link>
+                    <x-shell-link :href="route('atenciones.index')" icon="clinical" :active="request()->routeIs('atenciones.*') && !request()->routeIs('atenciones.clinica.tratamientos.*', 'atenciones.clinica.formulas.*')">Atención médica</x-shell-link>
+                @endcan
+                @can('listarTratamientos', \App\Models\AtencionMedica::class)
+                    <x-shell-link :href="route('atenciones.clinica.tratamientos.atenciones')" icon="clinical" :active="request()->routeIs('atenciones.clinica.tratamientos.*')">Tratamientos</x-shell-link>
+                @endcan
+                @can('listarFormulasMedicas', \App\Models\AtencionMedica::class)
+                    <x-shell-link :href="route('atenciones.clinica.formulas.atenciones')" icon="clinical" :active="request()->routeIs('atenciones.clinica.formulas.*')">Fórmulas médicas</x-shell-link>
                 @endcan
                 @can('viewAny', \App\Models\DisponibilidadMedica::class)
                     <x-shell-link :href="route('disponibilidad.index')" icon="clock" :active="request()->routeIs('disponibilidad.*')">Mi disponibilidad</x-shell-link>

@@ -5,17 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\GuardarAtencionClinicaRequest;
 use App\Models\AtencionMedica;
 use App\Models\Auditoria;
-use App\Models\Cita;
-use App\Models\Eps;
-use App\Models\Medico;
-use App\Models\Paciente;
-use App\Models\RemisionEps;
 use App\Models\User;
+use App\Services\ContextoAtencionClinica;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -23,11 +17,13 @@ use RuntimeException;
 
 class AtencionClinicaController extends Controller
 {
+    public function __construct(private ContextoAtencionClinica $contexto) {}
+
     public function show(AtencionMedica $atencion): View
     {
         $atencion->load(['cita.paciente', 'historiaClinica']);
         $cita = $atencion->cita;
-        $this->comprobarVinculos($atencion, $cita);
+        $this->contexto->comprobarVinculos($atencion, $cita);
 
         return view('atenciones.show', ['cita' => $cita, 'atencion' => $atencion, 'errorInicio' => null]);
     }
@@ -48,7 +44,7 @@ class AtencionClinicaController extends Controller
             if ($actual->estado === 'FINALIZADA') {
                 return 'La atención ya está finalizada.';
             }
-            $this->exigirEnCurso($actual);
+            $this->contexto->exigirEnCurso($actual);
             $pendientes = [];
             foreach (['motivo_consulta' => 'Falta el motivo clínico de consulta.', 'diagnostico_principal' => 'Falta el diagnóstico principal.'] as $campo => $mensaje) {
                 if (Str::trim((string) $actual->$campo) === '') {
@@ -95,7 +91,7 @@ class AtencionClinicaController extends Controller
     private function guardarTexto(GuardarAtencionClinicaRequest $request, AtencionMedica $atencion, string $campo, string $habilidad, string $accion): RedirectResponse
     {
         return $this->actualizar($request, $atencion, $habilidad, function (AtencionMedica $actual, User $actor) use ($request, $campo, $accion): string {
-            $this->exigirEnCurso($actual);
+            $this->contexto->exigirEnCurso($actual);
             $texto = $request->validated($campo);
             if ($texto === $actual->$campo) {
                 return 'El texto ya estaba guardado.';
@@ -113,50 +109,13 @@ class AtencionClinicaController extends Controller
     private function actualizar(GuardarAtencionClinicaRequest $request, AtencionMedica $atencion, string $habilidad, Closure $operacion): RedirectResponse
     {
         $destino = route('atenciones.clinica.show', $atencion);
-        $referencia = $atencion->cita;
-        $remisionPrevia = $habilidad === 'finalizar' ? $referencia->remision : null;
         try {
-            $mensaje = DB::transaction(function () use ($request, $atencion, $referencia, $remisionPrevia, $habilidad, $operacion): string {
-                $actor = User::query()->sharedLock()->findOrFail($request->user()->id);
-                Paciente::query()->sharedLock()->findOrFail($referencia->paciente_id);
-                $remision = null;
-                if ($remisionPrevia !== null) {
-                    Eps::query()->sharedLock()->findOrFail($remisionPrevia->eps_id);
-                    $remision = RemisionEps::query()->lockForUpdate()->findOrFail($remisionPrevia->id);
-                    abort_unless($remision->eps_id === $remisionPrevia->eps_id, 409);
-                }
-                Medico::query()->sharedLock()->findOrFail($atencion->medico_id);
-                $cita = Cita::query()->lockForUpdate()->findOrFail($atencion->cita_id);
-                $actual = AtencionMedica::query()->lockForUpdate()->findOrFail($atencion->id);
-                Gate::forUser($actor)->authorize($habilidad, $actual);
-                $this->comprobarVinculos($actual, $cita);
-                abort_unless($cita->paciente_id === $referencia->paciente_id && $cita->remision_id === $referencia->remision_id
-                    && $actual->medico_id === $atencion->medico_id && $actual->historia_clinica_id === $atencion->historia_clinica_id, 409);
-                if ($habilidad === 'finalizar') {
-                    $cita->setRelation('remision', $remision);
-                }
-                $actual->setRelation('cita', $cita);
-
-                return $operacion($actual, $actor);
-            }, attempts: 3);
+            $mensaje = $this->contexto->escribir($request->user(), $atencion, $habilidad, $operacion, bloquearRemision: $habilidad === 'finalizar');
         } catch (ValidationException $exception) {
             throw $exception->redirectTo($destino);
         }
 
         return redirect($destino)->with('status', $mensaje);
-    }
-
-    private function comprobarVinculos(AtencionMedica $atencion, Cita $cita): void
-    {
-        abort_unless($atencion->cita_id === $cita->id && $atencion->medico_id === $cita->medico_id
-            && $atencion->historiaClinica->paciente_id === $cita->paciente_id, 404);
-    }
-
-    private function exigirEnCurso(AtencionMedica $atencion): void
-    {
-        if ($atencion->estado !== 'EN_CURSO' || $atencion->fecha_hora_fin !== null || $atencion->cita->estado !== 'EN_ATENCION') {
-            throw ValidationException::withMessages(['atencion' => 'Solo se puede modificar una atención EN_CURSO con cita EN_ATENCION.']);
-        }
     }
 
     private function comprobarVersion(AtencionMedica $atencion, string $campo, string $version): void

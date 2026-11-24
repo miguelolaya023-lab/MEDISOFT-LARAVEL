@@ -10,16 +10,23 @@ use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\CitaReprogramacionController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
+use App\Http\Controllers\FormulaMedicaController;
+use App\Http\Controllers\HistoriaClinicaController;
+use App\Http\Controllers\HistorialConsultasController;
 use App\Http\Controllers\NotificacionCitaController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RemisionEpsController;
+use App\Http\Controllers\TratamientoController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\PreventClinicalResponseCaching;
 use App\Models\AntecedenteClinico;
+use App\Models\AtencionMedica;
 use App\Models\Cita;
 use App\Models\DisponibilidadMedica;
 use App\Models\Eps;
+use App\Models\HistoriaClinica;
 use App\Models\Paciente;
 use App\Models\RemisionEps;
 use App\Models\User;
@@ -51,6 +58,17 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::patch('/atenciones/{atencion}/motivo', [AtencionClinicaController::class, 'motivo'])->whereNumber('atencion')->can('registrarMotivo', 'atencion')->name('atenciones.clinica.motivo');
     Route::patch('/atenciones/{atencion}/diagnostico', [AtencionClinicaController::class, 'diagnostico'])->whereNumber('atencion')->can('registrarDiagnostico', 'atencion')->name('atenciones.clinica.diagnostico');
     Route::post('/atenciones/{atencion}/finalizar', [AtencionClinicaController::class, 'finalizar'])->whereNumber('atencion')->can('finalizar', 'atencion')->name('atenciones.clinica.finalizar');
+    Route::middleware(PreventClinicalResponseCaching::class)->name('atenciones.clinica.tratamientos.')->group(function () {
+        Route::get('/atenciones/tratamientos', [TratamientoController::class, 'atenciones'])->can('listarTratamientos', AtencionMedica::class)->name('atenciones');
+        Route::get('/atenciones/{atencion}/tratamientos', [TratamientoController::class, 'index'])->whereNumber('atencion')->can('registrarTratamiento', 'atencion')->name('index');
+        Route::post('/atenciones/{atencion}/tratamientos', [TratamientoController::class, 'store'])->whereNumber('atencion')->can('registrarTratamiento', 'atencion')->name('store');
+        Route::patch('/atenciones/{atencion}/tratamientos/{tratamiento}', [TratamientoController::class, 'update'])->whereNumber(['atencion', 'tratamiento'])->can('registrarTratamiento', 'atencion')->name('update');
+    });
+    Route::middleware(PreventClinicalResponseCaching::class)->name('atenciones.clinica.formulas.')->group(function () {
+        Route::get('/atenciones/formulas', [FormulaMedicaController::class, 'atenciones'])->can('listarFormulasMedicas', AtencionMedica::class)->name('atenciones');
+        Route::get('/atenciones/{atencion}/formulas', [FormulaMedicaController::class, 'index'])->whereNumber('atencion')->can('registrarFormulaMedica', 'atencion')->name('index');
+        Route::post('/atenciones/{atencion}/formulas', [FormulaMedicaController::class, 'store'])->whereNumber('atencion')->can('registrarFormulaMedica', 'atencion')->name('store');
+    });
     Route::get('/citas/{citaId}/atencion', [AtencionMedicaController::class, 'show'])->whereNumber('citaId')->can('startAttendance', Cita::class)->middleware('cache.headers:no_store;private')->name('atenciones.show');
     Route::post('/citas/{citaId}/atencion', [AtencionMedicaController::class, 'store'])->whereNumber('citaId')->can('startAttendance', Cita::class)->name('atenciones.store');
     Route::get('/disponibilidad', [DisponibilidadMedicaController::class, 'index'])->can('viewAny', DisponibilidadMedica::class)->name('disponibilidad.index');
@@ -86,6 +104,16 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/pacientes/{paciente}/estado', [PacienteStateController::class, 'show'])->can('changeState', 'paciente')->name('pacientes.state');
     Route::patch('/pacientes/{paciente}/inactivar', [PacienteStateController::class, 'inactivate'])->name('pacientes.inactivate');
     Route::patch('/pacientes/{paciente}/reactivar', [PacienteStateController::class, 'reactivate'])->name('pacientes.reactivate');
+    Route::get('/pacientes/{paciente}/historia-clinica', HistoriaClinicaController::class)->whereNumber('paciente')
+        ->can('viewAny', HistoriaClinica::class)->middleware('cache.headers:no_store;private')->name('pacientes.historia.show');
+    Route::prefix('/pacientes/{paciente}/historial-consultas')->name('pacientes.historial.')
+        ->whereNumber('paciente')->middleware('cache.headers:no_store;private')->can('viewConsultationHistory', HistoriaClinica::class)
+        ->group(function () {
+            Route::get('/', [HistorialConsultasController::class, 'formulario'])->name('formulario');
+            Route::get('/resultados', [HistorialConsultasController::class, 'consultar'])->name('resultados');
+            Route::get('/atenciones/{atencionId}', [HistorialConsultasController::class, 'detalle'])
+                ->whereNumber('atencionId')->can('viewAny', HistoriaClinica::class)->name('detalle');
+        });
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->can('view', 'paciente')->name('pacientes.show');
     Route::get('/usuarios', [UserController::class, 'index'])->can('viewAny', User::class)->name('usuarios.index');
     Route::get('/usuarios/create', [UserController::class, 'create'])->can('create', User::class)->name('usuarios.create');
