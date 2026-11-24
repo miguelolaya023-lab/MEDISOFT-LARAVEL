@@ -38,6 +38,31 @@ class AtencionMedicaPolicy
         return $this->autorizarTitular($user, $atencion, $user->tienePermiso('RF-031'));
     }
 
+    public function listarTratamientos(User $user): bool
+    {
+        return $this->permiteDocumentarAtencion($user, 'RF-056') && $user->medico()->habilitado()->exists();
+    }
+
+    public function registrarTratamiento(User $user, AtencionMedica $atencion): Response
+    {
+        return $this->autorizarTitular($user, $atencion, $this->permiteDocumentarAtencion($user, 'RF-056'));
+    }
+
+    public function listarFormulasMedicas(User $user): bool
+    {
+        return $this->permiteDocumentarAtencion($user, 'RF-057') && $user->medico()->habilitado()->exists();
+    }
+
+    public function registrarFormulaMedica(User $user, AtencionMedica $atencion): Response
+    {
+        return $this->autorizarTitular($user, $atencion, $this->permiteDocumentarAtencion($user, 'RF-057'));
+    }
+
+    private function permiteDocumentarAtencion(User $user, string $permiso): bool
+    {
+        return $user->tienePermiso($permiso) && in_array($user->rol?->nombre, ['Médico', 'Administrador'], true);
+    }
+
     private function autorizarTitular(User $user, AtencionMedica $atencion, bool $permiso): Response
     {
         if (! $permiso) {

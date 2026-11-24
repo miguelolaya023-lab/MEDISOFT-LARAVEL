@@ -12,6 +12,12 @@
                     <div class="md:col-span-2"><x-location-display :registro="$paciente" :detalle="true" /></div>
                 </dl>
                 <div class="flex flex-wrap gap-4">
+                    @can('viewConsultationHistory', \App\Models\HistoriaClinica::class)
+                        <a href="{{ route('pacientes.historial.formulario', $paciente) }}" class="text-sm text-teal-700 underline">Historial de consultas</a>
+                    @endcan
+                    @can('viewAny', \App\Models\HistoriaClinica::class)
+                        <a href="{{ route('pacientes.historia.show', $paciente) }}" class="text-sm text-teal-700 underline">Historia clínica</a>
+                    @endcan
                     @can('viewAny', \App\Models\AntecedenteClinico::class)<a href="{{ route('antecedentes.index', $paciente) }}" class="text-sm text-teal-700 underline">Antecedentes clínicos</a>@endcan
                     @can('update', $paciente)<a href="{{ route('pacientes.edit', $paciente) }}" class="text-sm text-teal-700 underline">Editar paciente</a>@endcan
                     @if ($paciente->estado === 'ACTIVO')

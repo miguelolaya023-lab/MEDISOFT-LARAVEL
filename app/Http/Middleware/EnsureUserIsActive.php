@@ -16,7 +16,13 @@ class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login');
+            $response = redirect()->route('login');
+
+            if ($request->routeIs('pacientes.historia.show', 'pacientes.historial.*')) {
+                $response->headers->set('Cache-Control', 'no-store, private');
+            }
+
+            return $response;
         }
 
         return $next($request);

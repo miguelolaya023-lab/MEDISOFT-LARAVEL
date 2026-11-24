@@ -19,6 +19,12 @@
                     @endif
                 </dl>
                 @if ($atencion)
+                    @can('registrarTratamiento', $atencion)
+                        <a href="{{ route('atenciones.clinica.tratamientos.index', $atencion) }}" class="inline-block text-teal-700 underline">Ver tratamientos</a>
+                    @endcan
+                    @can('registrarFormulaMedica', $atencion)
+                        <a href="{{ route('atenciones.clinica.formulas.index', $atencion) }}" class="inline-block text-teal-700 underline">Ver fórmulas médicas</a>
+                    @endcan
                     @can('view', $atencion)
                         @include('atenciones.campos-clinicos')
                     @endcan

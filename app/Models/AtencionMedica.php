@@ -6,6 +6,7 @@ use Database\Factories\AtencionMedicaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AtencionMedica extends Model
 {
@@ -46,5 +47,15 @@ class AtencionMedica extends Model
     public function historiaClinica(): BelongsTo
     {
         return $this->belongsTo(HistoriaClinica::class);
+    }
+
+    public function tratamientos(): HasMany
+    {
+        return $this->hasMany(Tratamiento::class);
+    }
+
+    public function formulasMedicas(): HasMany
+    {
+        return $this->hasMany(FormulaMedica::class);
     }
 }

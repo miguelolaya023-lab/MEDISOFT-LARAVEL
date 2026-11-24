@@ -49,6 +49,35 @@ Alpine.data('medisoftShell', () => ({
     },
 }));
 
+Alpine.data('formularioFormulaMedica', () => ({
+    filas: [0],
+    siguienteFila: 1,
+
+    get maximo() {
+        return Number(this.$root.dataset.maximo);
+    },
+
+    agregar() {
+        if (this.filas.length >= this.maximo) {
+            return;
+        }
+
+        const fila = this.siguienteFila++;
+        this.filas.push(fila);
+        this.$nextTick(() => this.$root.querySelector('#formula-medicamento-' + fila)?.focus());
+    },
+
+    quitar(fila) {
+        if (this.filas.length <= 1) {
+            return;
+        }
+
+        const botonAgregar = this.$root.querySelector('#formula-agregar');
+        this.filas = this.filas.filter((id) => id !== fila);
+        this.$nextTick(() => botonAgregar?.focus());
+    },
+}));
+
 window.Alpine = Alpine;
 
 Alpine.start();
