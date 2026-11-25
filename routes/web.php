@@ -8,14 +8,19 @@ use App\Http\Controllers\CitaCancelacionController;
 use App\Http\Controllers\CitaEpsController;
 use App\Http\Controllers\CitaParticularController;
 use App\Http\Controllers\CitaReprogramacionController;
+use App\Http\Controllers\ComprobanteParticularController;
+use App\Http\Controllers\ConsultaPagoParticularController;
 use App\Http\Controllers\DisponibilidadMedicaController;
 use App\Http\Controllers\EpsController;
 use App\Http\Controllers\FormulaMedicaController;
 use App\Http\Controllers\HistoriaClinicaController;
 use App\Http\Controllers\HistorialConsultasController;
+use App\Http\Controllers\HistorialPagosPacienteController;
+use App\Http\Controllers\LiquidacionParticularController;
 use App\Http\Controllers\NotificacionCitaController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteStateController;
+use App\Http\Controllers\PagoParticularController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RemisionEpsController;
 use App\Http\Controllers\TratamientoController;
@@ -48,11 +53,32 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'show'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.show');
     Route::patch('/citas/{citaId}/cancelar', [CitaCancelacionController::class, 'update'])->whereNumber('citaId')->can('cancel', Cita::class)->name('citas.cancelar.update');
     Route::get('/agenda/diaria', AgendaDiariaController::class)->can('consultarAgendaDiaria', Cita::class)->middleware('cache.headers:no_store;private')->name('agenda.diaria.index');
+    Route::prefix('pagos-particulares/liquidaciones')->name('pagos-particulares.liquidaciones.')
+        ->middleware(PreventClinicalResponseCaching::class)->can('liquidarParticular')->group(function () {
+            Route::get('/', [LiquidacionParticularController::class, 'index'])->name('index');
+            Route::get('/{atencionId}', [LiquidacionParticularController::class, 'show'])->whereNumber('atencionId')->name('show');
+            Route::post('/{atencionId}', [LiquidacionParticularController::class, 'store'])->whereNumber('atencionId')->name('store');
+        });
+    Route::prefix('pagos-particulares/pagos')->name('pagos-particulares.pagos.')
+        ->middleware(PreventClinicalResponseCaching::class)->can('registrarPagoParticular')->group(function () {
+            Route::get('/', [PagoParticularController::class, 'index'])->name('index');
+            Route::get('/{liquidacionId}', [PagoParticularController::class, 'show'])->whereNumber('liquidacionId')->name('show');
+            Route::post('/{liquidacionId}', [PagoParticularController::class, 'store'])->whereNumber('liquidacionId')->name('store');
+            Route::get('/{liquidacionId}/resultado/{pagoId}', [PagoParticularController::class, 'resultado'])
+                ->whereNumber(['liquidacionId', 'pagoId'])->name('resultado');
+        });
     Route::middleware('cache.headers:no_store;private')->group(function () {
         Route::get('/notificaciones/citas', [NotificacionCitaController::class, 'index'])->can('notificarCita', Cita::class)->name('notificaciones.citas.index');
         Route::post('/citas/{cita}/notificaciones', [NotificacionCitaController::class, 'store'])->whereNumber('cita')->can('notificarCita', 'cita')->name('notificaciones.citas.store');
         Route::get('/citas/{cita}/notificaciones/{intento}', [NotificacionCitaController::class, 'show'])->whereNumber(['cita', 'intento'])->can('notificarCita', 'cita')->name('notificaciones.citas.show');
     });
+    Route::prefix('pagos-particulares/comprobantes')->name('pagos-particulares.comprobantes.')
+        ->middleware(PreventClinicalResponseCaching::class)->can('emitirComprobanteParticular')->group(function () {
+            Route::get('/', [ComprobanteParticularController::class, 'index'])->name('index');
+            Route::get('/buscar', [ComprobanteParticularController::class, 'buscar'])->name('buscar');
+        });
+    Route::get('/pagos-particulares/consultas', ConsultaPagoParticularController::class)
+        ->middleware(PreventClinicalResponseCaching::class)->can('consultarPagosParticulares')->name('pagos-particulares.consultas.index');
     Route::get('/atenciones/iniciar', [AtencionMedicaController::class, 'index'])->can('verAgendaClinica', Cita::class)->name('atenciones.index');
     Route::get('/atenciones/{atencion}', [AtencionClinicaController::class, 'show'])->whereNumber('atencion')->can('view', 'atencion')->middleware('cache.headers:no_store;private')->name('atenciones.clinica.show');
     Route::patch('/atenciones/{atencion}/motivo', [AtencionClinicaController::class, 'motivo'])->whereNumber('atencion')->can('registrarMotivo', 'atencion')->name('atenciones.clinica.motivo');
@@ -114,6 +140,12 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/atenciones/{atencionId}', [HistorialConsultasController::class, 'detalle'])
                 ->whereNumber('atencionId')->can('viewAny', HistoriaClinica::class)->name('detalle');
         });
+    Route::name('pacientes.historial-pagos.')->middleware(PreventClinicalResponseCaching::class)->can('consultarHistorialPagos')->group(function () {
+        Route::get('/pacientes/historial-pagos', [HistorialPagosPacienteController::class, 'buscar'])->name('buscar');
+        Route::get('/pacientes/historial-pagos/buscar', [HistorialPagosPacienteController::class, 'localizar'])->name('localizar');
+        Route::get('/pacientes/{pacienteId}/historial-pagos', [HistorialPagosPacienteController::class, 'formulario'])->whereNumber('pacienteId')->name('formulario');
+        Route::get('/pacientes/{pacienteId}/historial-pagos/resultados', [HistorialPagosPacienteController::class, 'consultar'])->whereNumber('pacienteId')->name('resultados');
+    });
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->can('view', 'paciente')->name('pacientes.show');
     Route::get('/usuarios', [UserController::class, 'index'])->can('viewAny', User::class)->name('usuarios.index');
     Route::get('/usuarios/create', [UserController::class, 'create'])->can('create', User::class)->name('usuarios.create');

@@ -3,6 +3,11 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Policies\ComprobanteParticularPolicy;
+use App\Policies\ConsultaPagoParticularPolicy;
+use App\Policies\HistorialPagosPacientePolicy;
+use App\Policies\LiquidacionPolicy;
+use App\Policies\PagoParticularPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -25,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+        Gate::define('liquidarParticular', [LiquidacionPolicy::class, 'liquidarParticular']);
+        Gate::define('registrarPagoParticular', [PagoParticularPolicy::class, 'registrarPagoParticular']);
+        Gate::define('emitirComprobanteParticular', [ComprobanteParticularPolicy::class, 'emitirComprobanteParticular']);
+        Gate::define('consultarPagosParticulares', [ConsultaPagoParticularPolicy::class, 'consultarPagosParticulares']);
+        Gate::define('consultarHistorialPagos', [HistorialPagosPacientePolicy::class, 'consultarHistorialPagos']);
         ResetPassword::toMailUsing(function (User $user, #[\SensitiveParameter] string $token): MailMessage {
             $url = rtrim(config('app.url'), '/').route('password.reset', ['token' => $token, 'email' => $user->getEmailForPasswordReset()], false);
 

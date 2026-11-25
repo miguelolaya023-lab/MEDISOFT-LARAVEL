@@ -351,3 +351,28 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+@media print {
+    body:has(.med-comprobante) {
+        background: white;
+    }
+
+    body:has(.med-comprobante) :is(.med-sidebar, .med-topbar, .med-drawer, .med-skip-link, .med-comprobante-acciones) {
+        display: none !important;
+    }
+
+    body:has(.med-comprobante) .med-shell {
+        display: block;
+        min-height: 0;
+        padding: 0;
+    }
+
+    .med-comprobante {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        break-inside: avoid;
+    }
+}
