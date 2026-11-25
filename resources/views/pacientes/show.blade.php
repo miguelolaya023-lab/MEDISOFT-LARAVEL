@@ -12,6 +12,9 @@
                     <div class="md:col-span-2"><x-location-display :registro="$paciente" :detalle="true" /></div>
                 </dl>
                 <div class="flex flex-wrap gap-4">
+                    @can('consultarHistorialPagos')
+                        <a href="{{ route('pacientes.historial-pagos.formulario', $paciente->id) }}" class="text-sm text-teal-700 underline">Historial de pagos</a>
+                    @endcan
                     @can('viewConsultationHistory', \App\Models\HistoriaClinica::class)
                         <a href="{{ route('pacientes.historial.formulario', $paciente) }}" class="text-sm text-teal-700 underline">Historial de consultas</a>
                     @endcan

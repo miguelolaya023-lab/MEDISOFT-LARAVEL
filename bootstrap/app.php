@@ -25,6 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['motivo_consulta', 'diagnostico_principal', 'observacion_final', 'descripcion_tratamiento']);
         $exceptions->render(function (ValidationException $exception, Request $request): ?Response {
+            if ($request->routeIs('pagos-particulares.liquidaciones.store', 'pagos-particulares.pagos.store')) {
+                $request->session()->forget('_old_input');
+                if ($request->expectsJson()) {
+                    return null;
+                }
+
+                $destino = $request->routeIs('pagos-particulares.pagos.store')
+                    ? route('pagos-particulares.pagos.show', $request->route('liquidacionId'))
+                    : route('pagos-particulares.liquidaciones.show', $request->route('atencionId'));
+
+                return redirect($destino)
+                    ->withErrors($exception->errors());
+            }
+
             if ($request->routeIs('atenciones.clinica.tratamientos.store', 'atenciones.clinica.tratamientos.update')) {
                 $request->session()->forget('_old_input');
                 if ($request->expectsJson()) {
@@ -45,15 +59,18 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request): Response {
-            if ($request->routeIs('pacientes.historia.show', 'pacientes.historial.*')) {
+            if ($request->routeIs('pagos-particulares.consultas.index', 'pacientes.historial-pagos.*')) {
+                $response->headers->set('Referrer-Policy', 'no-referrer');
+            }
+            if ($request->routeIs('pacientes.historia.show', 'pacientes.historial.*', 'pacientes.historial-pagos.*', 'pagos-particulares.*')) {
                 $response->headers->set('Cache-Control', 'no-store, private');
             }
 
             return $response;
         });
 
-        $esFalloSqlClinico = static function (Throwable $exception, Request $request): bool {
-            if (! $request->routeIs('antecedentes.index', 'antecedentes.store', 'antecedentes.edit', 'antecedentes.update', 'atenciones.clinica.*', 'pacientes.historia.show', 'pacientes.historial.*')) {
+        $esFalloSqlProtegido = static function (Throwable $exception, Request $request): bool {
+            if (! $request->routeIs('antecedentes.index', 'antecedentes.store', 'antecedentes.edit', 'antecedentes.update', 'atenciones.clinica.*', 'pacientes.historia.show', 'pacientes.historial.*', 'pacientes.historial-pagos.*', 'pagos-particulares.*')) {
                 return false;
             }
             do {
@@ -66,11 +83,16 @@ return Application::configure(basePath: dirname(__DIR__))
             return false;
         };
 
-        $exceptions->report(function (Throwable $exception) use ($esFalloSqlClinico): ?bool {
-            if (! $esFalloSqlClinico($exception, request())) {
+        $exceptions->report(function (Throwable $exception) use ($esFalloSqlProtegido): ?bool {
+            if (! $esFalloSqlProtegido($exception, request())) {
                 return null;
             }
             $modulo = match (true) {
+                request()->routeIs('pacientes.historial-pagos.*') => 'RF-014',
+                request()->routeIs('pagos-particulares.consultas.index') => 'RF-036',
+                request()->routeIs('pagos-particulares.comprobantes.*') => 'RF-035',
+                request()->routeIs('pagos-particulares.pagos.*') => 'RF-034',
+                request()->routeIs('pagos-particulares.liquidaciones.*') => 'RF-033',
                 request()->routeIs('pacientes.historial.*') => 'RF-013',
                 request()->routeIs('pacientes.historia.show') => 'RF-059',
                 request()->routeIs('atenciones.clinica.*') => 'AtencionMedica',
@@ -83,11 +105,16 @@ return Application::configure(basePath: dirname(__DIR__))
             return false;
         });
 
-        $exceptions->render(function (Throwable $exception, Request $request) use ($esFalloSqlClinico): ?Response {
-            if (! $esFalloSqlClinico($exception, $request)) {
+        $exceptions->render(function (Throwable $exception, Request $request) use ($esFalloSqlProtegido): ?Response {
+            if (! $esFalloSqlProtegido($exception, $request)) {
                 return null;
             }
             $mensaje = match (true) {
+                $request->routeIs('pacientes.historial-pagos.*') => 'No fue posible consultar el historial de pagos. Intente nuevamente.',
+                $request->routeIs('pagos-particulares.consultas.index') => 'No fue posible consultar los pagos particulares. Intente nuevamente.',
+                $request->routeIs('pagos-particulares.comprobantes.*') => 'No fue posible consultar el comprobante. Intente nuevamente.',
+                $request->routeIs('pagos-particulares.pagos.*') => 'No fue posible completar el registro de pago particular. Intente nuevamente.',
+                $request->routeIs('pagos-particulares.liquidaciones.*') => 'No fue posible completar la liquidación particular. Intente nuevamente.',
                 $request->routeIs('pacientes.historial.*') => 'No fue posible consultar el historial de consultas. Intente nuevamente.',
                 $request->routeIs('pacientes.historia.show') => 'No fue posible consultar la historia clínica. Intente nuevamente.',
                 $request->routeIs('atenciones.clinica.*') => 'No fue posible completar la operación de atención médica. Intente nuevamente.',

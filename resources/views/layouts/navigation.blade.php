@@ -39,7 +39,7 @@
             </div>
         @endcanany
 
-        @canany(['viewAny', 'search', 'create'], \App\Models\Paciente::class)
+        @if (Gate::any(['viewAny', 'search', 'create'], \App\Models\Paciente::class) || Gate::allows('consultarHistorialPagos'))
             <div class="med-nav-group" role="group" aria-labelledby="med-nav-patients">
                 <p id="med-nav-patients" class="med-nav-label">Pacientes</p>
                 @can('viewAny', \App\Models\Paciente::class)
@@ -51,8 +51,11 @@
                 @can('create', \App\Models\Paciente::class)
                     <x-shell-link :href="route('pacientes.create')" :active="request()->routeIs('pacientes.create')">Registrar paciente</x-shell-link>
                 @endcan
+                @can('consultarHistorialPagos')
+                    <x-shell-link :href="route('pacientes.historial-pagos.buscar')" icon="document" :active="request()->routeIs('pacientes.historial-pagos.*')">Historial de pagos</x-shell-link>
+                @endcan
             </div>
-        @endcanany
+        @endif
 
         @if (Gate::allows('verAgendaClinica', \App\Models\Cita::class) || Gate::allows('viewAny', \App\Models\DisponibilidadMedica::class) || Gate::allows('listarTratamientos', \App\Models\AtencionMedica::class) || Gate::allows('listarFormulasMedicas', \App\Models\AtencionMedica::class))
             <div class="med-nav-group" role="group" aria-labelledby="med-nav-clinical">
@@ -98,6 +101,24 @@
                 @endcan
                 @can('create', \App\Models\RemisionEps::class)
                     <x-shell-link :href="route('remisiones.create')" :active="request()->routeIs('remisiones.create')">Registrar remisión</x-shell-link>
+                @endcan
+            </div>
+        @endcanany
+
+        @canany(['liquidarParticular', 'registrarPagoParticular', 'emitirComprobanteParticular', 'consultarPagosParticulares'])
+            <div class="med-nav-group" role="group" aria-labelledby="med-nav-particular">
+                <p id="med-nav-particular" class="med-nav-label">Pagos particulares</p>
+                @can('liquidarParticular')
+                    <x-shell-link :href="route('pagos-particulares.liquidaciones.index')" icon="document" :active="request()->routeIs('pagos-particulares.liquidaciones.*')">Liquidar consulta particular</x-shell-link>
+                @endcan
+                @can('registrarPagoParticular')
+                    <x-shell-link :href="route('pagos-particulares.pagos.index')" icon="document" :active="request()->routeIs('pagos-particulares.pagos.*')">Registrar pago</x-shell-link>
+                @endcan
+                @can('emitirComprobanteParticular')
+                    <x-shell-link :href="route('pagos-particulares.comprobantes.index')" icon="document" :active="request()->routeIs('pagos-particulares.comprobantes.*')">Emitir comprobante</x-shell-link>
+                @endcan
+                @can('consultarPagosParticulares')
+                    <x-shell-link :href="route('pagos-particulares.consultas.index')" icon="document" :active="request()->routeIs('pagos-particulares.consultas.index')">Consultar pagos particulares</x-shell-link>
                 @endcan
             </div>
         @endcanany
